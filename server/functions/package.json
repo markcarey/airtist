@@ -1,0 +1,40 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@gelatonetwork/relay-sdk": "^3.5.0",
+    "@gnosis.pm/safe-core-sdk": "^3.1.1",
+    "@gnosis.pm/safe-ethers-lib": "^1.6.1",
+    "@safe-global/auth-kit": "0.1.0-alpha.2",
+    "@safe-global/relay-kit": "0.1.0-alpha.2",
+    "@safe-global/safe-core-sdk": "^3.3.2",
+    "@safe-global/safe-core-sdk-types": "^1.9.0",
+    "@safe-global/safe-ethers-lib": "^1.9.2",
+    "@safe-global/safe-service-client": "^2.0.0",
+    "@web3auth/base": "^5.0.1-alpha.0",
+    "@web3auth/modal": "^5.0.1-alpha.0",
+    "@web3auth/openlogin-adapter": "^5.0.1-alpha.0",
+    "ethers": "^5.7.2",
+    "express-jwt": "^8.4.1",
+    "firebase-admin": "^10.0.2",
+    "firebase-functions": "^3.18.0",
+    "jose": "^4.13.1",
+    "node-fetch": "^2.6.1",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^0.2.0"
+  },
+  "private": true
+}

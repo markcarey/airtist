@@ -197,6 +197,9 @@ async function getAuth(req, res, next) {
                 data.safeAddress = safeAddress;
                 data.safeDeployed = false;
             }
+            data.postCount = 0;
+            data.followerCount = 0;
+            data.followingCount = 0;
             await db.collection('users').doc(address).set(data);
             req.user = data;
         }
@@ -213,14 +216,12 @@ api.get("/api", async function (req, res) {
 
 api.post("/api/post", getAuth, async function (req, res) {
     console.log("req.user", JSON.stringify(req.user));
-    var data = {};
-    data.title = req.q.title;
-    data.prompt = req.q.prompt;
-    data.mintable = req.q.mintable;
+    var data = req.q;
     data.user = req.user.address;
     data.name = req.user.name;
     data.profileImage = req.user.profileImage;
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+    data.minted = false;
     const doc = await db.collection('posts').add(data);
     await generate(data.prompt, doc.id);
     data.id = doc.id;
@@ -250,6 +251,21 @@ api.post("/api/like", getAuth, async function (req, res) {
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     const doc = await db.collection('posts').doc(req.q.id).collection("likes").add(data);
     return res.json(data);
+});
+
+api.get("/api/profile", getAuth, async function (req, res) {
+    // logged in user profile
+    console.log("req.user", JSON.stringify(req.user));
+    return res.json(req.user);
+});
+api.get("/api/profile/:address", async function (req, res) {
+    const userRef = db.collection('users').doc(req.params.address);
+    const user = await userRef.get();
+    if (user.exists) {
+        return res.json(user.data());
+    } else {
+        return res.json({"error": "user not found"});
+    }
 });
 
 api.get('/images/:id.png', async function (req, res) {

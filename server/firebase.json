@@ -36,6 +36,14 @@
         "destination": "/index.html"
       },
       {
+        "source": "/trending/*",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/settings/*",
+        "destination": "/index.html"
+      },
+      {
         "source": "/p/*",
         "destination": "/index.html"
       }

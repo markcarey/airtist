@@ -57,45 +57,18 @@
                 <h3 class="text-xl"> Navigation </h3>
                 <span class="btn-mobile" uk-toggle="target: #wrapper ; cls: sidebar-active"></span>
             </div>
-            <div class="sidebar_inner" data-simplebar>
-                <div class="flex flex-col items-center my-6 uk-visible@s">
-                    <div
-                        class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full transition m-0.5 mr-2  w-24 h-24">
-                        <img src="/assets/images/avatars/avatar-2.jpg"
-                            class="bg-gray-200 border-4 border-white rounded-full w-full h-full">
-                    </div>
-                    <a href="profile.html" class="text-xl font-medium capitalize mt-4 uk-link-reset"> Stella Johnson
-                    </a>
-                    <div class="flex justify-around w-full items-center text-center uk-link-reset text-gray-800 mt-6">
-                        <div>
-                            <a href="#">
-                                <strong>Post</strong>
-                                <div> 130</div>
-                            </a>
-                        </div>
-                        <div>
-                            <a href="#">
-                                <strong>Following</strong>
-                                <div> 1,230</div>
-                            </a>
-                        </div>
-                        <div>
-                            <a href="#">
-                                <strong>Followers</strong>
-                                <div> 2,430</div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            <div class="sidebar_inner" data-simplebardisabled>
+                
                 <hr class="-mx-4 -mt-1 uk-visible@s">
                 <ul>
-                    <li>
-                        <a href="feed.html"> 
+                    <li class="active">
+                        <a href="/"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                             </svg> 
                             <span> Feed </span> </a> 
                     </li>
+                    <!--
                     <li>
                         <a href="explore.html"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,8 +81,9 @@
                             <i class="uil-location-arrow"></i>
                             <span> Messages </span> <span class="nav-tag"> 3</span>  </a> 
                     </li>
+                  -->
                     <li>
-                        <a href="trending.html"> 
+                        <a href="/trending/"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
@@ -117,12 +91,7 @@
                             <span> Trending </span> </a> 
                     </li>
                     <li>
-                        <a href="market.html"> 
-                            <i class="uil-store"></i>
-                            <span> Marketplace </span> </a> 
-                    </li>
-                    <li class="active">
-                        <a href="setting.html"> 
+                        <a href="/settings/"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -136,17 +105,17 @@
                         </ul>
                     </li>
                     <li>
-                        <a href="profile.html"> 
+                        <a href="profile/"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <span> My Profile </span> </a> 
+                            <span> Profile </span> </a> 
                     </li>
                     <li>
                         <hr class="my-2">
                     </li>
                     <li>
-                        <a href="form-login.html"> 
+                        <a class="logout" href="#"> 
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
@@ -341,84 +310,6 @@
                             <a href="#" class="see-all">See all</a>
                         </div>
 
-                        <!-- Messages -->
-
-                        <a href="#" class="header-links-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                            </svg>
-                        </a>
-                        <div uk-drop="mode: click;offset: 4" class="header_dropdown">
-                            <h4
-                                class="-mt-5 -mx-5 bg-gradient-to-t from-gray-100 to-gray-50 border-b font-bold px-6 py-3">
-                                Messages </h4>
-                            <ul class="dropdown_scrollbar" data-simplebar>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-1.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> John menathon </strong> <time> 6:43 PM</time>
-                                            <p> Lorem ipsum dolor sit amet, consectetur </p>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-2.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> Zara Ali </strong> <time>12:43 PM</time>
-                                            <p>  Sediam nonummy nibh euismod tincidunt laoreet dolore  </p>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-3.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> Mohamed Ali </strong> <time> Wed </time>
-                                            <p> Lorem ipsum dolor sit amet, consectetur </p>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-1.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> John menathon </strong> <time> Sun</time>
-                                            <p> Namliber tempor cumsoluta nobis eleifend option adipiscing </p>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-2.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> Zara Ali </strong> <time> Fri</time>
-                                            <p> Lorem ipsum dolor sit amet, consectetur </p>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-3.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <strong> Mohamed Ali </strong> <time>1 Week ago</time>
-                                            <p>  Sediam nonummy nibh euismod tincidunt laoreet dolore  </p>
-                                        </div>
-                                    </a>
-                                </li>
-                            </ul>
-                            <a href="#" class="see-all">See all</a>
-                        </div>
-
                         <!-- profile -->
 
                         <a href="#">
@@ -429,7 +320,7 @@
                                 <li><a href="#"> Account setting </a> </li>
                                 <li><a href="#"> Payments </a> </li>
                                 <li><a href="#"> Help </a> </li>
-                                <li><a href="#" id="logout"> Log Out</a></li>
+                                <li><a href="#" class="logout"> Log Out</a></li>
                             </ul>
                         </div>
 
@@ -437,92 +328,7 @@
                 </div>
             </header>
     
-            <div id="profile" class="container pro-container m-auto" style="display: none;">
-                
-                <!-- profile-cover-->
-                <div class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
-
-                    <div>
-                        <div class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full m-0.5 mr-2  w-56 h-56 relative overflow-hidden uk-transition-toggle">  
-                            <img src="/assets/images/avatars/avatar-7.jpg" class="bg-gray-200 border-4 border-white rounded-full w-full h-full dark:border-gray-900">
-
-                            <div class="absolute -bottom-3 custom-overly1 flex justify-center pt-4 pb-7 space-x-3 text-2xl text-white uk-transition-slide-bottom-medium w-full">
-                                <a href="#" class="hover:text-white">
-                                    <i class="uil-camera"></i>
-                                </a>
-                                <a href="#" class="hover:text-white">
-                                    <i class="uil-crop-alt"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="lg:w/8/12 flex-1 flex flex-col lg:items-start items-center"> 
-
-                        <h2 class="font-semibold lg:text-2xl text-lg mb-2"> Stella Jonathan</h2>
-                        <p class="lg:text-left mb-2 text-center  dark:text-gray-100"> Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet 
-                            doming id quod mazim placerat facer possim assum</p>
-
-                            <div class="flex font-semibold mb-3 space-x-2  dark:text-gray-10">
-                                <a href="#">Travailing</a> , <a href="#">Sports</a>  , <a href="#">Movies</a> 
-                            </div>
-
-                            
-                            <div class="capitalize flex font-semibold space-x-3 text-center text-sm my-2">
-                                <a href="#" class="bg-gray-300 shadow-sm p-2 px-6 rounded-md dark:bg-gray-700"> Add friend</a>
-                                <a href="#" class="bg-pink-500 shadow-sm p-2 pink-500 px-6 rounded-md text-white hover:text-white hover:bg-pink-600"> Send message</a>
-                                <div>
-
-                                <a href="#" class="bg-gray-300 flex h-12 h-full items-center justify-center rounded-full text-xl w-9 dark:bg-gray-700"> 
-                                    <i class="icon-feather-chevron-down"></i> 
-                                </a>
-                                    
-                                <div class="bg-white w-56 shadow-md mx-auto p-2 mt-12 rounded-md text-gray-500 hidden text-base dark:bg-gray-900" uk-drop="mode: click">
-                              
-                                  <ul class="space-y-1">
-                                    <li> 
-                                        <a href="#" class="flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-700">
-                                         <i class="uil-user-minus mr-2"></i>Unfriend
-                                        </a> 
-                                    </li>
-                                    <li> 
-                                        <a href="#" class="flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-700">
-                                         <i class="uil-eye-slash  mr-2"></i>Hide Your Story
-                                        </a> 
-                                    </li>
-                                    <li> 
-                                        <a href="#" class="flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-700">
-                                         <i class="uil-share-alt mr-2"></i> Share This Profile
-                                        </a> 
-                                    </li>
-                                    <li>
-                                      <hr class="-mx-2 my-2  dark:border-gray-700">
-                                    </li>
-                                    <li> 
-                                        <a href="#" class="flex items-center px-3 py-2 text-red-500 hover:bg-red-100 hover:text-red-500 rounded-md dark:hover:bg-red-600">
-                                         <i class="uil-stop-circle mr-2"></i> Block
-                                        </a> 
-                                    </li>
-                                  </ul>
-                              
-                                </div>
-
-                                </div>
-
-                            </div>
-
-                            <div class="divide-gray-300 divide-transparent divide-x grid grid-cols-3 lg:text-left lg:text-lg mt-3 text-center w-full dark:text-gray-100">
-                                <div class="flex lg:flex-row flex-col"> 120k <strong class="lg:pl-2">Posts</strong></div>
-                                <div class="lg:pl-4 flex lg:flex-row flex-col"> 420k <strong class="lg:pl-2">Followers</strong></div>
-                                <div class="lg:pl-4 flex lg:flex-row flex-col"> 530k <strong class="lg:pl-2">Following</strong></div>
-                            </div>
- 
-                    </div>
-
-                    <div class="w-20"></div>
-
-                </div>
-              
+            <div id="profile" class="view container pro-container m-auto" style="display: none;">
 
                 <div class="flex items-center justify-between mt-8 space-x-3">
                     <h1 class="flex-1 font-extrabold leading-none lg:text-2xl text-lg text-gray-900 tracking-tight uk-heading-line"><span>Gallery</span></h1>
@@ -532,104 +338,8 @@
                     </div>
                 </div>
 
-                <div class="my-6 grid lg:grid-cols-4 grid-cols-2 gap-1.5 hover:text-yellow-700 uk-link-reset">
-                <div>
-                    <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/avatars/avatar-lg-1.jpg" class="w-full h-full absolute object-cover inset-0">
+                <div id="grid-posts" class="my-3 grid lg:grid-cols-4 grid-cols-2 gap-3 hover:text-yellow-700 uk-link-reset">
 
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/post/img1.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/post/img2.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/post/img3.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/post/img4.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/post/img5.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/avatars/avatar-1.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div>
-                        <div class="bg-red-500 max-w-full lg:h-64 h-40 rounded-md relative overflow-hidden uk-transition-toggle" tabindex="0"> 
-                            <img src="/assets/images/avatars/avatar-6.jpg" class="w-full h-full absolute object-cover inset-0">
-
-                            <div class="absolute bg-black bg-opacity-40 bottom-0 flex h-full items-center justify-center space-x-5 text-lg text-white uk-transition-scale-up w-full">   
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="heart" class="mr-1"></ion-icon> 150 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="chatbubble-ellipses" class="mr-1"></ion-icon> 30 </a>
-                                <a href="#story-modal" uk-toggle class="flex items-center"> <ion-icon name="pricetags" class="mr-1"></ion-icon> 12  </a>
-                            </div>
-
-                        </div>
-                    </div>
-                    
                 </div>
 
                 <div class="flex justify-center mt-6">
@@ -639,7 +349,7 @@
 
             </div>
 
-            <div id="feed" class="container m-auto">
+            <div id="feed" class="view container m-auto" style="">
 
               <h1 class="lg:text-2xl text-lg font-extrabold leading-none text-gray-900 tracking-tight mb-5"> Feed </h1>
 
@@ -666,60 +376,10 @@
 
                           <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 flex items-baseline justify-between py-4 px-6 dark:border-gray-800">
                               <h2 class="font-semibold text-lg">Who to follow</h2>
-                              <a href="#"> Refresh</a>
+                              <a href="/trending/"> More</a>
                           </div>
                          
-                          <div class="divide-gray-300 divide-gray-50 divide-opacity-50 divide-y px-4 dark:divide-gray-800 dark:text-gray-100">
-                              <div class="flex items-center justify-between py-3">
-                                  <div class="flex flex-1 items-center space-x-4">
-                                      <a href="profile.html">
-                                          <img src="/assets/images/avatars/avatar-2.jpg" class="bg-gray-200 rounded-full w-10 h-10">
-                                      </a>
-                                      <div class="flex flex-col">
-                                          <span class="block capitalize font-semibold"> Johnson smith </span>
-                                          <span class="block capitalize text-sm"> Australia </span>
-                                      </div>
-                                  </div>
-                                  
-                                  <a href="#" class="border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
-                              </div>
-                              <div class="flex items-center justify-between py-3">
-                                  <div class="flex flex-1 items-center space-x-4">
-                                      <a href="profile.html">
-                                          <img src="/assets/images/avatars/avatar-1.jpg" class="bg-gray-200 rounded-full w-10 h-10">
-                                      </a>
-                                      <div class="flex flex-col">
-                                          <span class="block capitalize font-semibold"> James Lewis </span>
-                                          <span class="block capitalize text-sm"> Istanbul </span>
-                                      </div>
-                                  </div>
-                                  <a href="#" class="border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
-                              </div>
-                              <div class="flex items-center justify-between py-3">
-                                  <div class="flex flex-1 items-center space-x-4">
-                                      <a href="profile.html">
-                                          <img src="/assets/images/avatars/avatar-5.jpg" class="bg-gray-200 rounded-full w-10 h-10">
-                                      </a>
-                                      <div class="flex flex-col">
-                                          <span class="block capitalize font-semibold"> John Michael </span>
-                                          <span class="block capitalize text-sm"> New York </span>
-                                      </div>
-                                  </div>
-                                  <a href="#" class="border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
-                              </div>
-                              <div class="flex items-center justify-between py-3">
-                                  <div class="flex flex-1 items-center space-x-4">
-                                      <a href="profile.html">
-                                          <img src="/assets/images/avatars/avatar-7.jpg" class="bg-gray-200 rounded-full w-10 h-10">
-                                      </a>
-                                      <div class="flex flex-col">
-                                          <span class="block capitalize font-semibold"> Monroe Parker </span>
-                                          <span class="block capitalize text-sm"> Yeman </span>
-                                      </div>
-                                  </div>
-                                  
-                                  <a href="#" class="border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
-                              </div>
+                          <div id="sidebar-users" class="divide-gray-300 divide-gray-50 divide-opacity-50 divide-y px-4 dark:divide-gray-800 dark:text-gray-100">
 
                           </div>
 
@@ -729,51 +389,11 @@
                           <div class="bg-white dark:bg-gray-900 shadow-md rounded-md overflow-hidden">
 
                               <div class="bg-gray-50 border-b border-gray-100 flex items-baseline justify-between py-4 px-6 dark:bg-gray-800 dark:border-gray-700">
-                                  <h2 class="font-semibold text-lg">Latest</h2>
-                                  <a href="explore.html"> See all</a>
+                                  <h2 class="font-semibold text-lg">Trending</h2>
+                                  <a href="/trending/"> See all</a>
                               </div>
   
                               <div class="grid grid-cols-2 gap-2 p-3 uk-link-reset">
-  
-                                  <div class="bg-red-500 max-w-full h-32 rounded-lg relative overflow-hidden uk-transition-toggle"> 
-                                      <a href="#story-modal" uk-toggle>
-                                          <img src="/assets/images/post/img2.jpg" class="w-full h-full absolute object-cover inset-0">
-                                      </a>
-                                      <div class="flex flex-1 justify-around items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   
-                                          <a href="#"> <i class="uil-heart"></i> 150 </a>
-                                          <a href="#"> <i class="uil-heart"></i> 30 </a>
-                                      </div>
-                                  </div>
-                                  
-                                  <div class="bg-red-500 max-w-full h-40 rounded-lg relative overflow-hidden uk-transition-toggle"> 
-                                      <a href="#story-modal" uk-toggle>
-                                          <img src="/assets/images/post/img7.jpg" class="w-full h-full absolute object-cover inset-0">
-                                      </a>
-                                      <div class="flex flex-1 justify-around items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   
-                                          <a href="#"> <i class="uil-heart"></i> 150 </a>
-                                          <a href="#"> <i class="uil-heart"></i> 30 </a>
-                                      </div>
-                                  </div>                             
-                                  
-                                  <div class="bg-red-500 max-w-full h-40 -mt-8 rounded-lg relative overflow-hidden uk-transition-toggle"> 
-                                      <a href="#story-modal" uk-toggle>
-                                          <img src="/assets/images/post/img5.jpg" class="w-full h-full absolute object-cover inset-0">
-                                      </a>
-                                      <div class="flex flex-1 justify-around  items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   
-                                          <a href="#"> <i class="uil-heart"></i> 150 </a>
-                                          <a href="#"> <i class="uil-heart"></i> 30 </a>
-                                      </div>
-                                  </div>
-  
-                                  <div class="bg-red-500 max-w-full h-32 rounded-lg relative overflow-hidden uk-transition-toggle"> 
-                                      <a href="#story-modal" uk-toggle>
-                                          <img src="/assets/images/post/img3.jpg" class="w-full h-full absolute object-cover inset-0">
-                                      </a>
-                                      <div class="flex flex-1 justify-around  items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   
-                                          <a href="#"> <i class="uil-heart"></i> 150 </a>
-                                          <a href="#"> <i class="uil-heart"></i> 30 </a>
-                                      </div>
-                                  </div>
   
                               </div>
   
@@ -786,6 +406,44 @@
         
 
           </div>
+
+          <div id="trending" class="container m-auto" style="display: none;">
+
+            <div class="flex justify-between items-baseline lg:mr-8  uk-visible@s">
+                <h1 class="font-extrabold leading-none mb-6 lg:text-2xl text-lg text-gray-900 tracking-tight"> AIrtists </h1>
+            </div>
+
+            <!-- users-->
+
+            <div class="relative uk-visible@s" uk-slider="finite: true">
+
+                <a class="-left-2 absolute bg-white bottom-1/2 flex items-center justify-center p-2 rounded-full shadow text-xl w-9 z-10 dark:bg-gray-800 dark:text-white"
+                    href="#" uk-slider-item="previous"> <i class="icon-feather-chevron-left"></i> </a>
+                <a class="absolute bg-white bottom-1/2 flex items-center justify-center p-2 right-4 rounded-full shadow text-xl w-9 z-10 dark:bg-gray-800 dark:text-white"
+                    href="#" uk-slider-item="next"> <i class="icon-feather-chevron-right"></i></a>
+
+                <div class="uk-slider-container pb-3 lg:mr-3">
+
+                    <ul id="trending-users" class="uk-slider-items uk-grid uk-grid-small">
+
+                    </ul>
+
+                </div>
+            </div>
+
+            <h1 class="font-extrabold leading-none mb-6 mt-8 lg:text-2xl text-lg text-gray-900 tracking-tight"> AIrtwork </h1>
+
+            <div id="trending-grid" class="my-3 grid lg:grid-cols-4 grid-cols-2 gap-3 hover:text-yellow-700 uk-link-reset">
+
+            </div>
+
+            <!-- Load more-->
+            <div class="flex justify-center mt-6">
+                <a href="#" class="bg-white font-semibold my-3 px-6 py-2 rounded-full shadow-md dark:bg-gray-800 dark:text-white"> Load more ..</a>
+            </div>
+
+
+        </div>
 
         </div>
 
@@ -818,22 +476,23 @@
             <div class="col-span-2">
                 <label class="mb-0"> Category </label>
                 <select name="category" id="category" class="bg-gray-100 dark:bg-gray-600 shadow-none border w-full px-3 py-2 rounded-md focus:border-blue-600 outline-none mt-2">
-                    <option value="2">Autos &amp; Vehicles</option>
-                    <option value="3">Baby &amp; Children's Products</option>
-                    <option value="4">Beauty Products &amp; Services</option>
-                    <option value="5">Computers &amp; Peripherals</option>
-                    <option value="6">Consumer Electronics</option>
-                    <option value="7">Dating Services</option>
-                    <option value="8">Financial Services</option>
-                    <option value="9">Gifts &amp; Occasions</option>
-                    <option value="10">Home &amp; Garden</option>
-                    <option value="1">Other</option>
+                    <option value="">Choose (optional)</option>
+                    <option value="Abstract">Abstract</option>
+                    <option value="Landscape">Landscape</option>
+                    <option value="Painting">Painting</option>
+                    <option value="Digital">Digital</option>
+                    <option value="Manga">Manga</option>
+                    <option value="Drawing">Drawing</option>
+                    <option value="Realistic">Realistic</option>
+                    <option value="Modern">Modern</option>
+                    <option value="Classic">Classic</option>
+                    <option value="Futuristic">Futuristic</option>
                 </select>
                </div>
                 <div> 
                     <div>
                        <label class="mb-0"> Price </label>
-                       <input id="price" placeholder="0.00" type="number" class="bg-gray-100 dark:bg-gray-600 shadow-none border focus:border-blue-600 mt-2 outline-none pl-3 py-2 rounded-md w-full">
+                       <input id="price" placeholder="1" type="number" value="1" class="bg-gray-100 dark:bg-gray-600 shadow-none border focus:border-blue-600 mt-2 outline-none pl-3 py-2 rounded-md w-full">
                     </div>
                  </div>
            </div>
@@ -849,18 +508,37 @@
                 <div>
                    <label class="mb-0"> Token </label>
                    <select name="currency" id="currency" class="bg-gray-100 dark:bg-gray-600 shadow-none border w-full px-3 py-2 rounded-md focus:border-blue-600 outline-none mt-2">
-                    <option value="0">ETH</option>
+                     <option value="0">AIrt</option>
+                     <option value="0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6">WETH</option>
                    </select>
                 </div>
              </div>
            </div>
 
-
-            <div class="checkbox">
-                <input type="checkbox" id="mintable" checked="">
-                <label for="chekcbox1"><span class="checkbox-icon"></span> Enable public minting</a>
-                </label>
+           <div class="flex justify-between items-center">
+                <div>
+                    <h4> Mint this an an NFT?</h4>
+                    <div> You will own the NFT. </div>
+                </div>
+                <div class="switches-list -mt-8 is-large">
+                    <div class="switch-container">
+                        <label class="switch"><input id="selfmint" type="checkbox"><span class="switch-button"></span> </label>
+                    </div>
+                </div>
             </div>
+            <hr>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h4> Enable others to mint?</h4>
+                    <div> Minters will own the NFT, you receive payment </div>
+                </div>
+                <div class="switches-list -mt-8 is-large">
+                    <div class="switch-container">
+                        <label class="switch"><input id="mintable" type="checkbox" checked><span class="switch-button"></span> </label>
+                    </div>
+                </div>
+            </div>
+
             <button id="post" type="button" class="bg-pink-600 font-semibold p-2 mt-2 rounded-md text-center text-white w-full">
                 Post </button>
         </div>
@@ -872,90 +550,7 @@
 
    <!-- Story modal -->
     <div id="story-modal" class="uk-modal-container" uk-modal>
-        <div class="uk-modal-dialog story-modal">
-            <button class="uk-modal-close-default lg:-mt-9 lg:-mr-9 -mt-5 -mr-5 shadow-lg bg-white rounded-full p-4 transition dark:bg-gray-600 dark:text-white" type="button" uk-close></button>
 
-                <div class="story-modal-media">
-                    <img src="/assets/images/post/img4.jpg" alt=""  class="inset-0 h-full w-full object-cover">
-                </div>
-                <div class="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100">
-                
-                    <!-- post header-->
-                    <div class="border-b flex items-center justify-between px-5 py-3 dark:border-gray-600">
-                        <div class="flex flex-1 items-center space-x-4">
-                            <a href="#">
-                                <div class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-0.5 rounded-full">
-                                    <img src="/assets/images/avatars/avatar-2.jpg"
-                                        class="bg-gray-200 border border-white rounded-full w-8 h-8">
-                                </div>
-                            </a>
-                            <span class="block text-lg font-semibold"> Johnson smith </span>
-                        </div>
-                        <a href="#"> 
-                            <i  class="icon-feather-more-horizontal text-2xl rounded-full p-2 transition -mr-1"></i>
-                        </a>
-                    </div>
-                    <div class="story-content p-4" data-simplebar>
-
-                        <p> Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. </p>
-                        
-                        <div class="py-4 ">
-                            <div class="flex justify-around">
-                                <a href="#" class="flex items-center space-x-3">
-                                    <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> Like</div>
-                                </a>
-                                <a href="#" class="flex items-center space-x-3">
-                                    <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> Comment</div>
-                                </a>
-                                <a href="#" class="flex items-center space-x-3">
-                                    <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> Share</div>
-                                </a>
-                            </div>
-                            <hr class="-mx-4 my-3">
-                            <div class="flex items-center space-x-3"> 
-                                <div class="flex items-center">
-                                    <img src="/assets/images/avatars/avatar-1.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white">
-                                    <img src="/assets/images/avatars/avatar-4.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white -ml-2">
-                                    <img src="/assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white -ml-2">
-                                </div>
-                                <div>
-                                    Liked <strong> Johnson</strong> and <strong> 209 Others </strong>
-                                </div>
-                            </div>
-                        </div>
-
-                    <div class="-mt-1 space-y-1">
-                        <div class="flex flex-1 items-center space-x-2">
-                            <img src="/assets/images/avatars/avatar-2.jpg" class="rounded-full w-8 h-8">
-                            <div class="flex-1 p-2">
-                                consectetuer adipiscing elit, sed diam nonummy nibh euismod
-                            </div>
-                        </div>
-
-                        <div class="flex flex-1 items-center space-x-2">
-                            <img src="/assets/images/avatars/avatar-4.jpg" class="rounded-full w-8 h-8">
-                            <div class="flex-1 p-2">
-                                consectetuer adipiscing elit
-                            </div>
-                        </div>
-
-                    </div>
-
-
-                    </div>
-                    <div class="p-3 border-t dark:border-gray-600">
-                        <div class="bg-gray-200 dark:bg-gray-700 rounded-full rounded-md relative">
-                            <input type="text" placeholder="Add your Comment.." class="bg-transparent max-h-8 shadow-none">
-                            <div class="absolute bottom-0 flex h-full items-center right-0 right-3 text-xl space-x-2">
-                                <a href="#"> <i class="uil-image"></i></a>
-                                <a href="#"> <i class="uil-video"></i></a>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-        </div>
     </div>
 
     <script>
@@ -1015,7 +610,7 @@
     <script type="module" src="https://unpkg.com/ionicons@5.2.3/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule="" src="https://unpkg.com/ionicons@5.2.3/dist/ionicons/ionicons.js"></script>
 
-    <script src="/js/dapp.js?v=29"></script>
+    <script src="/js/dapp.js?v=65"></script>
 
 </body>
 

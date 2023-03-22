@@ -12,17 +12,22 @@ const firebaseConfig = {
   };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-var resetFeed;
+var resetFeed, resetProfile, resetUsers;
+var posts = {};
+var users = {};
 
 const path = window.location.pathname.split('/');
+var currentPage = "feed";
+var idForPage = '';
 console.log(path);
 
-if (path[1] == "profile") {
-    console.log("show profile for " + path[2]);
+if (path[1]) {
+    currentPage = path[1];
 }
-if (path[1] == "p") {
-    console.log("show post for " + path[2]);
+if (path[2]) {
+    idForPage = path[2];
 }
+
 
 let web3auth = null;
 let provider = null;
@@ -69,8 +74,9 @@ let provider = null;
         $(".btn-logged-in").show();
         $(".btn-logged-out").hide();
         if (web3auth.connectedAdapterName === "openlogin") {
-        $("#sign-tx").show();
+            $("#sign-tx").show();
         }
+        loadProfile();
     } else {
         $(".btn-logged-out").show();
         $(".btn-logged-in").hide();
@@ -85,6 +91,68 @@ function uiConsole(...args) {
     console.log(JSON.stringify(args || {}, null, 2));
 }
 
+async function loadProfile () {
+    const headers = await getHeaders();
+    const res = await fetch('/api/profile', { 
+        method: 'GET', 
+        headers: new Headers(headers)
+    });
+    var user = await res.json();
+    if ("address" in user) {
+        $("img.header-avatar").attr("src", user.profileImage);
+        if (resetProfile) {
+            resetProfile();
+        }
+        resetProfile = db.collection("users").where("address", "==", user.address)
+            .onSnapshot((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    console.log("user", JSON.stringify(doc.data()));
+                    var meta = doc.data();
+                    users[meta.address] = meta;
+                    if ( $( "#sidebar-profile" ).length <= 0 ) {
+                        $("div.sidebar_inner").prepend( getSidebarProfileHTML(meta) );
+                    } else {
+                        $( "#sidebar-profile").replaceWith( getSidebarProfileHTML(meta) );
+                    }
+                    if ( $( "#profile-cover" ).length <= 0 ) {
+                        $("#profile").prepend( getProfileCoverHTML(meta) );
+                    } else {
+                        $( "#profile-cover").replaceWith( getProfileCoverHTML(meta) );
+                    }
+                });
+            });
+    } // if "address"
+}
+
+async function loadUsers () {
+    if (resetUsers) {
+        resetUsers();
+    }
+    resetUsers = db.collection("users").orderBy("followerCount", "desc")
+        .onSnapshot((querySnapshot) => {
+            var count = 0;
+            querySnapshot.forEach((doc) => {
+                count++;
+                console.log("user", JSON.stringify(doc.data()));
+                var meta = doc.data();
+                users[meta.address] = meta;
+                if (count <= 5) {
+                    if ( $( "#sidebar-user-" + doc.id ).length <= 0 ) {
+                        $("#sidebar-users").prepend( getSidebarUserHTML(meta) );
+                    } else {
+                        $( "#sidebar-user-" + doc.id ).replaceWith( getSidebarUserHTML(meta) );
+                    }
+                }
+
+                if ( $( "#trending-user-" + doc.id ).length <= 0 ) {
+                    $("#trending-users").prepend( getTrendingUserHTML(meta) );
+                } else {
+                    $( "#trending-user-" + doc.id ).replaceWith( getTrendingUserHTML(meta) );
+                }
+            });
+        });
+}
+
 function loadFeed () {
     if (resetFeed) {
         resetFeed();
@@ -95,10 +163,26 @@ function loadFeed () {
                 console.log("post", JSON.stringify(doc.data()));
                 var meta = doc.data();
                 meta.id = doc.id;
+                posts[meta.id] = meta;
+                posts[meta.id].doc = doc;
                 if ( $( "#post-" + doc.id ).length <= 0 ) {
                     $("#feed-posts").prepend( getFeedPostHTML(meta) );
                 } else {
                     $( "#post-" + doc.id ).replaceWith( getFeedPostHTML(meta) );
+                }
+                if ( $( "#post-grid-" + doc.id ).length <= 0 ) {
+                    meta.type = "post";
+                    $("#grid-posts").prepend( getGridPostHTML(meta) );
+                } else {
+                    meta.type = "post";
+                    $( "#post-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
+                }
+                if ( $( "#trending-grid-" + doc.id ).length <= 0 ) {
+                    meta.type = "trending";
+                    $("#trending-grid").prepend( getGridPostHTML(meta) );
+                } else {
+                    meta.type = "trending";
+                    $( "#trending-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
                 }
 
                 doc.ref.collection("comments").orderBy("timestamp", "asc")
@@ -109,6 +193,51 @@ function loadFeed () {
                             c.id = comment.id;
                             $(`#comments-${doc.id}`).append( getCommentHTML(c) );
                         });
+                    });
+
+                doc.ref.collection("likes").orderBy("timestamp", "desc")
+                    .onSnapshot((querySnapshot) => {
+                        var count = 0;
+                        var html = '';
+                        var first = '';
+                        querySnapshot.forEach((like) => {
+                            count++;
+                            console.log("like", JSON.stringify(like.data()));
+                            var l = like.data();
+                            l.id = like.id;
+                            if (count == 1) {
+                                first = l.name;
+                                if (!first) {
+                                    first = abbrAddress(l.user);
+                                }
+                                if (!l.profileImage) {
+                                    l.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + l.user + "/image";
+                                }
+                                html += `
+                                <div id="like-avatars-${doc.id}" class="flex items-center">
+                                <img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900">
+                                `;
+                            }
+                            if ( (count) > 1 && (count <= 3) ) {
+                                html += `<img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 -ml-2">`;
+                            }
+                        });
+                        if (count > 1) {
+                            html += `
+                                </div>
+                                <div class="like-summary dark:text-gray-100">
+                                    Liked by <strong>${first}</strong> and <strong> ${count-1} others </strong>
+                                </div>
+                            `;
+                        } else if (count == 1) {
+                            html += `
+                                </div>
+                                <div class="like-summary dark:text-gray-100">
+                                    Liked by <strong>${first}</strong>
+                                </div>
+                            `;
+                        }
+                        $(`#like-summary-${doc.id}`).html(html);
                     });
             });
     });
@@ -160,7 +289,7 @@ async function comment(data) {
     var result = await res.json();
     uiConsole(result);
     // TODO: reset field
-    $(`#comments-${data.id}`).append( getCommentHTML(result) );
+    //$(`#comments-${data.id}`).append( getCommentHTML(result) );
     $(`#comment-text-${data.id}`).val('');
 }
 
@@ -182,7 +311,21 @@ async function updateLikes(id) {
 
 $( document ).ready(function() {
 
+    if (currentPage == "feed") {
+        $(".view").hide();
+        $("#feed").show();
+    } else if (currentPage == "profile") {
+        $(".view").hide();
+        $("#profile").show();
+    } else if (currentPage == "trending") {
+        $(".view").hide();
+        $("#trending").show();
+    }
+
     loadFeed();
+    loadUsers();
+
+    //loadProfile();
 
     $("#loginOLD").click(async function (event) {
         console.log("login button clicked!");
@@ -262,6 +405,12 @@ $( document ).ready(function() {
         return false;
     });
 
+    $( "#feed-posts" ).on( "click", ".comment-link", async function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        $(`#comment-text-${id}`).focus();
+        return false;
+    });
     $( "#feed-posts" ).on( "click", ".comment-button", async function(e) {
         e.preventDefault();
         console.log("comment!");
@@ -282,12 +431,13 @@ $( document ).ready(function() {
         var data = {};
         data.id = $(this).data('id');
         like(data);
-        $(this).find('svg').attr("fill", "red");
+        //$(this).find('svg').attr("fill", "red");
+        $(this).find('i').css("color", "red");
         $(this).find('.like-button-text').text(" Liked");
         return false;
     });
 
-    $("#logout").click(async function (event) {
+    $(".logout").click(async function (event) {
         try {
             await web3auth.logout();
             $(".btn-logged-in").hide();
@@ -442,37 +592,18 @@ function getFeedPostHTML(data) {
             
             <div class="flex space-x-4 lg:font-bold">
                 <a href="#" data-id="${data.id}" class="like-button like flex items-center space-x-2">
-                    <div class="p-2 rounded-full text-black">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="22" height="22" class="dark:text-gray-100">
-                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                        </svg>
-                    </div>
-                    <div class="like-button-text"> Like</div>
+                   <div><i class="uil-heart mr-1" style="font-size: 130%;"></i><span class="like-button-text">Like</span></div>
                 </a>
-                <a href="#" data-id="${data.id}" class="flex items-center space-x-2">
-                    <div class="p-2 rounded-full text-black">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="22" height="22" class="dark:text-gray-100">
-                            <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div> Comment</div>
+                <a href="#comment-text-${data.id}" data-id="${data.id}" class="comment-link flex items-center space-x-2">
+                    <div><i class="uil-comment-alt-message mr-1" style="font-size: 130%;"></i>Comment</div>
                 </a>
-                <a href="#" class="flex items-center space-x-2 flex-1 justify-end">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="22" height="22" class="dark:text-gray-100">
-                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                    </svg>
-                    <div> Share</div>
+                <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
+                    <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint</div>
                 </a>
             </div>
-            <div class="flex items-center space-x-3"> 
-                <div class="flex items-center">
-                    <img src="/assets/images/avatars/avatar-1.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900">
-                    <img src="/assets/images/avatars/avatar-4.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 -ml-2">
-                    <img src="/assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 -ml-2">
-                </div>
-                <div class="dark:text-gray-100">
-                    Liked <strong> Johnson</strong> and <strong> 209 Others </strong>
-                </div>
+
+            <div id="like-summary-${data.id}" class="flex items-center space-x-3"> 
+
             </div>
 
             <div id="comments-${data.id}" class="border-t pt-4 space-y-4 dark:border-gray-600">
@@ -495,6 +626,12 @@ function getFeedPostHTML(data) {
 
 function getCommentHTML(data) {
     html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.user);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    }
     html = `
     <div id="comment-${data.id}" class="flex">
         <div class="w-10 h-10 rounded-full relative flex-shrink-0">
@@ -503,6 +640,327 @@ function getCommentHTML(data) {
         <div class="text-gray-700 py-2 px-3 rounded-md bg-gray-100 h-full relative lg:ml-5 ml-2 lg:mr-20  dark:bg-gray-800 dark:text-gray-100">
             <p class="leading-6">${data.comment}</p>
             <div class="absolute w-3 h-3 top-3 -left-1 bg-gray-100 transform rotate-45 dark:bg-gray-800"></div>
+        </div>
+    </div>
+    `;
+    return html;
+}
+
+function getSidebarProfileHTML(data) {
+    var html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.user);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    }
+    html = `
+    <div id="sidebar-profile" class="flex flex-col items-center my-6 uk-visible@s">
+        <div
+            class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full transition m-0.5 mr-2  w-24 h-24">
+            <img src="${data.profileImage}"
+                class="user-avatar bg-gray-200 border-4 border-white rounded-full w-full h-full">
+        </div>
+        <a href="/profile/${data.user}" class="text-xl font-medium capitalize mt-4 uk-link-reset"> ${data.name}
+        </a>
+        <div class="flex justify-around w-full items-center text-center uk-link-reset text-gray-800 mt-6">
+            <div>
+                <a href="#">
+                    <strong>Posts</strong>
+                    <div> ${data.postCount ? data.postCount: 0}</div>
+                </a>
+            </div>
+            <div>
+                <a href="#">
+                    <strong>Following</strong>
+                    <div> ${data.followingCount ? data.followingCount : 0}</div>
+                </a>
+            </div>
+            <div>
+                <a href="#">
+                    <strong>Followers</strong>
+                    <div> ${data.followerCount ? data.followerCount : 0}</div>
+                </a>
+            </div>
+        </div>
+    </div>
+    `;
+    return html;    
+}
+
+function getGridPostHTML(data) {
+  var html = '';
+  if (!data.name) {
+    data.name = abbrAddress(data.user);
+  }
+  if (!data.profileImage) {
+    data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+  }
+  html = `
+  <div id="${data.type}-grid-${data.id}">
+    <div
+        class="bg-green-400 max-w-full lg:h-56 h-48 rounded-lg relative overflow-hidden shadow uk-transition-toggle">
+        <a href="#story-modal" class="post-modal" data-id="${data.id}" uk-toggle>
+            <img src="/images/${data.id}.png" class="w-full h-full absolute object-cover inset-0">
+        </a>
+        <div
+            class="flex flex-1 items-center absolute bottom-0 w-full p-3 text-white custom-overly1 uk-transition-slide-bottom-medium">
+            <a href="#" class="lg:flex flex-1 items-center hidden">
+                <div> ${data.name} </div>
+            </a>
+            <div class="flex space-x-2 flex-1 lg:flex-initial justify-around">
+                <a href="#"> <i class="uil-heart"></i> ${data.likeCount ? data.likeCount : 0} </a>
+                <a href="#"> <i class="uil-comment-alt-message"></i> ${data.commentCount ? data.commentCount : 0} </a>
+            </div>
+        </div>
+
+    </div>
+  </div>
+  `;
+  return html;
+}
+
+
+function getProfileCoverHTML(data) {
+  var html = '';
+  if (!data.name) {
+    data.name = abbrAddress(data.address);
+  }
+  if (!data.profileImage) {
+    data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+  }
+  html = `
+    <div id="profile-cover" class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
+
+        <div>
+            <div class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full m-0.5 mr-2  w-56 h-56 relative overflow-hidden uk-transition-toggle">  
+                <img src="${data.profileImage}" class="bg-gray-200 border-4 border-white rounded-full w-full h-full dark:border-gray-900">
+
+                <div class="absolute -bottom-3 custom-overly1 flex justify-center pt-4 pb-7 space-x-3 text-2xl text-white uk-transition-slide-bottom-medium w-full">
+                    <a href="#" class="hover:text-white">
+                        <i class="uil-camera"></i>
+                    </a>
+                    <a href="#" class="hover:text-white">
+                        <i class="uil-crop-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:w/8/12 flex-1 flex flex-col lg:items-start items-center"> 
+
+            <h2 class="font-semibold lg:text-2xl text-lg mb-2"> ${data.name}</h2>
+            <p class="lg:text-left mb-2 text-center  dark:text-gray-100"> </p>
+                
+                <div class="capitalize flex font-semibold space-x-3 text-center text-sm my-2">
+                    <a href="#" class="bg-pink-500 shadow-sm p-2 pink-500 px-6 rounded-md text-white hover:text-white hover:bg-pink-600"> Follow</a>
+                    <div>
+
+                    <a href="#" class="bg-gray-300 flex h-12 h-full items-center justify-center rounded-full text-xl w-9 dark:bg-gray-700"> 
+                        <i class="icon-feather-chevron-down"></i> 
+                    </a>
+                        
+                    <div class="bg-white w-56 shadow-md mx-auto p-2 mt-12 rounded-md text-gray-500 hidden text-base dark:bg-gray-900" uk-drop="mode: click">
+                    
+                        <ul class="space-y-1">
+                        <li> 
+                            <a href="#" class="flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-700">
+                                <i class="uil-user-minus mr-2"></i>Unfollow
+                            </a> 
+                        </li>
+                        <li> 
+                            <a href="#" class="flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-700">
+                                <i class="uil-share-alt mr-2"></i> Share
+                            </a> 
+                        </li>
+                        <li>
+                            <hr class="-mx-2 my-2  dark:border-gray-700">
+                        </li>
+                        <li> 
+                            <a href="#" class="flex items-center px-3 py-2 text-red-500 hover:bg-red-100 hover:text-red-500 rounded-md dark:hover:bg-red-600">
+                                <i class="uil-stop-circle mr-2"></i> Block
+                            </a> 
+                        </li>
+                        </ul>
+                    
+                    </div>
+
+                    </div>
+
+                </div>
+
+                <div class="divide-gray-300 divide-transparent divide-x grid grid-cols-3 lg:text-left lg:text-lg mt-3 text-center w-full dark:text-gray-100">
+                    <div class="flex lg:flex-row flex-col"> ${data.postCount ? data.postCount: 0} <strong class="lg:pl-2">Posts</strong></div>
+                    <div class="lg:pl-4 flex lg:flex-row flex-col"> ${data.followerCount ? data.followerCount: 0} <strong class="lg:pl-2">Followers</strong></div>
+                    <div class="lg:pl-4 flex lg:flex-row flex-col"> ${data.followingCount ? data.followingCount: 0} <strong class="lg:pl-2">Following</strong></div>
+                </div>
+
+        </div>
+
+        <div class="w-20"></div>
+
+    </div>
+  `;
+  return html;
+}
+
+function getTrendingUserHTML(data) {
+    var html = '';
+    if (!data.name) {
+      data.name = abbrAddress(data.address);
+    }
+    if (!data.profileImage) {
+      data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
+    }
+    html = `
+    <li>
+        <div
+            class="relative bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full transform -rotate-2 hover:rotate-3 transition hover:scale-105 m-1">
+            <img src="${data.profileImage}"
+                class="w-20 h-20 rounded-full border-2 border-white bg-gray-200">
+        </div>
+        <a href="/profile/${data.address}" class="block font-medium text-center text-gray-500 text-x truncate w-24">
+            ${data.name} </a>
+    </li>
+    `;
+    return html;
+}
+
+function getSidebarUserHTML(data) {
+    html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.address);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
+    }
+    html = `
+    <div class="flex items-center justify-between py-3">
+        <div class="flex flex-1 items-center space-x-4">
+            <a href="/profile/${data.address}">
+                <img src="${data.profileImage}" class="bg-gray-200 rounded-full w-10 h-10">
+            </a>
+            <div class="flex flex-col">
+                <span class="block capitalize font-semibold"> ${data.name} </span>
+            </div>
+        </div>
+        
+        <a href="#" data-address="${data.address}" class="follow-button border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
+    </div>
+    `;
+    return html;
+}
+
+function getModalHTML(data) {
+    var html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.user);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    }
+    html = `
+    <div class="uk-modal-dialog story-modal">
+        <button class="uk-modal-close-default lg:-mt-9 lg:-mr-9 -mt-5 -mr-5 shadow-lg bg-white rounded-full p-4 transition dark:bg-gray-600 dark:text-white" type="button" uk-close></button>
+
+            <div class="story-modal-media">
+                <img src="/images/${data.id}.png" alt=""  class="inset-0 h-full w-full object-cover">
+            </div>
+            <div class="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100">
+            
+                <!-- post header-->
+                <div class="border-b flex items-center justify-between px-5 py-3 dark:border-gray-600">
+                    <div class="flex flex-1 items-center space-x-4">
+                        <a href="#">
+                            <div class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-0.5 rounded-full">
+                                <img src="${data.profileImage}"
+                                    class="bg-gray-200 border border-white rounded-full w-8 h-8">
+                            </div>
+                        </a>
+                        <span class="block text-lg font-semibold"> ${data.name} </span>
+                    </div>
+                    <a href="#"> 
+                        <i  class="icon-feather-more-horizontal text-2xl rounded-full p-2 transition -mr-1"></i>
+                    </a>
+                </div>
+                <div class="story-content p-4" data-simplebar>
+
+                    <p> ${data.title} </p>
+                    
+                    <div class="py-4 ">
+                        <div class="flex justify-around">
+                            <a href="#" data-id="${data.id}" class="like-button flex items-center space-x-3">
+                                <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> Like</div>
+                            </a>
+                            <a href="#" data-id="${data.id}" class="comment-link flex items-center space-x-3">
+                                <div class="flex font-bold items-baseline"> <i class="uil-comment-alt-message mr-1"> </i> Comment</div>
+                            </a>
+                            <a href="#" data-id="${data.id}" class="mint flex items-center space-x-3">
+                                <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> Mint</div>
+                            </a>
+                        </div>
+                        <hr class="-mx-4 my-3">
+                        <div id="modal-like-summary-${data.id}" class="flex items-center space-x-3"> 
+
+                        </div>
+                    </div>
+
+                <div id="modal-comments-${data.id}" class="-mt-1 space-y-1">
+
+                </div>
+
+
+                </div>
+                <div class="p-3 border-t dark:border-gray-600">
+                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full rounded-md relative">
+                        <input type="text" id="modal-comment-text-${data.id}" data-id="${data.id}" placeholder="Add your Comment.." class="bg-transparent max-h-8 shadow-none">
+                        <a href="#" data-id="${data.id}" class="comment-button"> <i class="uil-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+    </div>
+    `;
+    return html;
+}
+
+function getModalCommentHTML(data) {
+    var html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.user);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    }
+    html = `
+    <div class="flex flex-1 items-center space-x-2">
+        <img src="${data.profileImage}" class="rounded-full w-8 h-8">
+        <div class="flex-1 p-2">
+            ${data.comment}
+        </div>
+    </div>
+    `;
+    return html;
+}
+
+function getSidebarTrendingPostsHTML(data) {
+    var html = '';
+    if (!data.name) {
+        data.name = abbrAddress(data.user);
+    }
+    if (!data.profileImage) {
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    }
+    html = `
+    <div class="bg-red-500 max-w-full h-40 rounded-lg relative overflow-hidden uk-transition-toggle"> 
+        <a href="#story-modal" data-id="${data.id}" class="modal-link" uk-toggle>
+            <img src="/images/${data.id}.png" class="w-full h-full absolute object-cover inset-0">
+        </a>
+        <div class="flex flex-1 justify-around items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   
+            <a href="#"> <i class="uil-heart"></i> ${data.likeCount ? data.likeCount : 0} </a>
+            <a href="#"> <i class="uil-comment-alt-message"></i> ${data.commentCount ? data.commentCount : 0} </a>
         </div>
     </div>
     `;

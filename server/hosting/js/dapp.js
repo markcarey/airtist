@@ -12,7 +12,7 @@ const firebaseConfig = {
   };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-var resetFeed, resetProfile, resetUsers;
+var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts;
 var posts = {};
 var users = {};
 var loggedInUser;
@@ -102,7 +102,7 @@ async function loadUserProfile () {
     loggedInUser = user;
     if ("address" in user) {
         if (!user.profileImage) {
-            user.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
+            user.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + user.address + "/image";
         }
         $("img.header-avatar").attr("src", user.profileImage);
         if (resetProfile) {
@@ -132,6 +132,7 @@ async function loadUserProfile () {
                 });
             });
     } // if "address"
+    updateFollowButtons();
 }
 
 async function loadProfile (address) {
@@ -151,8 +152,13 @@ async function loadProfile (address) {
                     $( "#profile-cover").replaceWith( getProfileCoverHTML(meta) );
                 }
             });
+            updateFollowButtons();
 
-            db.collection("posts").orderBy("timestamp", "asc").where("user", "==", address)
+            $("#grid-posts").html('');
+            if (resetProfilePosts) {
+                resetProfilePosts();
+            }
+            resetProfilePosts = db.collection("posts").orderBy("timestamp", "asc").where("user", "==", address)
                 .onSnapshot((querySnapshot) => {
                     var count = 0;
                     querySnapshot.forEach((doc) => {
@@ -195,6 +201,7 @@ async function loadUsers () {
                     } else {
                         $( "#sidebar-user-" + doc.id ).replaceWith( getSidebarUserHTML(meta) );
                     }
+                    updateFollowButtons();
                 }
 
                 if ( $( "#trending-user-" + doc.id ).length <= 0 ) {
@@ -226,11 +233,11 @@ function loadFeed () {
                     $( "#post-" + doc.id ).replaceWith( getFeedPostHTML(meta) );
                 }
                 if ( $( "#post-grid-" + doc.id ).length <= 0 ) {
-                    meta.type = "post";
-                    $("#grid-posts").prepend( getGridPostHTML(meta) );
+                    //meta.type = "post";
+                    //$("#grid-posts").prepend( getGridPostHTML(meta) );
                 } else {
-                    meta.type = "post";
-                    $( "#post-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
+                    //meta.type = "post";
+                    //$( "#post-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
                 }
                 if ( $( "#trending-grid-" + doc.id ).length <= 0 ) {
                     meta.type = "trending";
@@ -377,7 +384,21 @@ async function like(data) {
     });
     var result = await res.json();
     uiConsole(result);
-    updateLikes(data.id);
+}
+
+async function follow(address) {
+    const headers = await getHeaders();
+    var data = {
+        "address": address
+    };
+    const res = await fetch('/api/follow', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    updateFollowButtons();
+    uiConsole(result);
 }
 
 async function postModal(data) {
@@ -404,24 +425,53 @@ async function postModal(data) {
         });
 }
 
-async function updateLikes(id) {
-    // TODO:
+function updateFollowButtons() {
+    if (loggedInUser) {
+        $(".follow-button").each(function(){
+            console.log("found follow button!");
+            var target = $(this).data('address');
+            console.log("target", target);
+            console.log("loggedInUser", loggedInUser);
+            if ("following" in loggedInUser) {
+                const following = loggedInUser.following.map(address => address.toLowerCase());
+                if (following.includes(target.toLowerCase())) {
+                    $(this).text("Following").prop('disabled', true);
+                }
+            }
+            if (target.toLowerCase() == loggedInUser.address.toLowerCase()) {
+                $(this).prop('disabled', true);
+            }
+        });
+    }    
 }
+
+
 
 $( document ).ready(function() {
 
     if (currentPage == "feed") {
         $(".view").hide();
         $("#feed").show();
+        $(".menu").removeClass("active");
+        $(".menu-feed").addClass("active");
     } else if (currentPage == "profile") {
         $(".view").hide();
         if (idForPage) {
             loadProfile(idForPage);
         }
         $("#profile").show();
+        $(".menu").removeClass("active");
+        $(".menu-profile").addClass("active");
     } else if (currentPage == "trending") {
         $(".view").hide();
         $("#trending").show();
+        $(".menu").removeClass("active");
+        $(".menu-trending").addClass("active");
+    } else if (currentPage == "settings") {
+        $(".view").hide();
+        $("#settings").show();
+        $(".menu").removeClass("active");
+        $(".menu-settings").addClass("active");
     }
 
     loadFeed();
@@ -484,6 +534,7 @@ $( document ).ready(function() {
                     $("img.header-avatar").attr("src", user.profileImage);
                 }
             }
+            loadProfile();
         } catch (error) {
             console.error(error.message);
         }
@@ -503,7 +554,15 @@ $( document ).ready(function() {
         if (data.mintable) {
             data.mintable = true;
         }
-        // TODO: other fields
+        data.selfmint = $("#selfmint").val();
+        if (data.selfmint) {
+            data.selfmint = true;
+        }
+        data.category = $("#category").val();
+        data.type = $("#type").val();
+        data.price = $("#price").val();
+        data.currency = $("#currency").val();
+        console.log("art data", data);
         postArt(data);
         return false;
     });
@@ -569,6 +628,15 @@ $( document ).ready(function() {
         var data = posts[id];
         postModal(data);
         return true;
+    });
+
+    $( "#sidebar-users, #profile" ).on( "click", ".follow-button", async function(e) {
+        e.preventDefault();
+        console.log("follow!");
+        const address = $(this).data('address');
+        follow(address);
+        $(this).text('Following');
+        return false;
     });
 
     $(".logout").click(async function (event) {
@@ -684,7 +752,7 @@ function getFeedPostHTML(data) {
                         <img src="${data.profileImage}" class="bg-gray-200 border border-white rounded-full w-8 h-8">
                     </div>
                 </a>
-                <span class="block capitalize font-semibold dark:text-gray-100"> ${data.name} </span>
+                <span class="block font-semibold dark:text-gray-100"> ${data.name} </span>
             </div>
         <div>
             <a href="#"> <i class="icon-feather-more-horizontal text-2xl hover:bg-gray-200 rounded-full p-2 transition -mr-1 dark:hover:bg-gray-700"></i> </a>
@@ -786,7 +854,7 @@ function getSidebarProfileHTML(data) {
         data.name = abbrAddress(data.address);
     }
     if (!data.profileImage) {
-        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+        data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
     }
     html = `
     <div id="sidebar-profile" class="flex flex-col items-center my-6 uk-visible@s">
@@ -795,7 +863,7 @@ function getSidebarProfileHTML(data) {
             <img src="${data.profileImage}"
                 class="user-avatar bg-gray-200 border-4 border-white rounded-full w-full h-full">
         </div>
-        <a href="/profile/${data.user}" class="text-xl font-medium capitalize mt-4 uk-link-reset"> ${data.name}
+        <a href="/profile/${data.user}" class="text-xl font-medium mt-4 uk-link-reset"> ${data.name}
         </a>
         <div class="flex justify-around w-full items-center text-center uk-link-reset text-gray-800 mt-6">
             <div>
@@ -887,7 +955,7 @@ function getProfileCoverHTML(data) {
             <p class="lg:text-left mb-2 text-center  dark:text-gray-100"> </p>
                 
                 <div class="capitalize flex font-semibold space-x-3 text-center text-sm my-2">
-                    <a href="#" class="bg-pink-500 shadow-sm p-2 pink-500 px-6 rounded-md text-white hover:text-white hover:bg-pink-600"> Follow</a>
+                    <a href="#" data-address="${data.address}" class="follow-button bg-pink-500 shadow-sm p-2 pink-500 px-6 rounded-md text-white hover:text-white hover:bg-pink-600"> Follow</a>
                     <div>
 
                     <a href="#" class="bg-gray-300 flex h-12 h-full items-center justify-center rounded-full text-xl w-9 dark:bg-gray-700"> 
@@ -968,18 +1036,30 @@ function getSidebarUserHTML(data) {
     if (!data.profileImage) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
     }
+    var followButton = `<a href="#" data-address="${data.address}" class="follow-button border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>`;
+    if (loggedInUser) {
+        if ("following" in loggedInUser) {
+            const following = loggedInUser.following.map(address => address.toLowerCase());
+            if (following.includes(target.toLowerCase())) {
+                followButton = `<a href="#" data-address="${data.address}" class="follow-button border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Following </a>`;
+            }
+        }
+        if (target.toLowerCase() == loggedInUser.address.toLowerCase()) {
+            followButton = '';
+        }
+    }
     html = `
-    <div class="flex items-center justify-between py-3">
+    <div id="sidebar-user-${data.address}" class="flex items-center justify-between py-3">
         <div class="flex flex-1 items-center space-x-4">
             <a href="/profile/${data.address}">
                 <img src="${data.profileImage}" class="bg-gray-200 rounded-full w-10 h-10">
             </a>
             <div class="flex flex-col">
-                <span class="block capitalize font-semibold"> ${data.name} </span>
+                <span class="block font-semibold"> ${data.name} </span>
             </div>
         </div>
         
-        <a href="#" data-address="${data.address}" class="follow-button border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>
+        ${followButton}
     </div>
     `;
     return html;

@@ -46,12 +46,24 @@ const provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_UR
 var providers = [];
 providers[0] = provider;
 var signer;
+var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + process.env.RPC_ETH});
 
 const jwksSocial = 'https://api.openlogin.com/jwks';
 const jwksExternal = 'https://authjs.web3auth.io/jwks';
 
 function getContracts(pk, provider) {
     signer = new ethers.Wallet(pk, provider);
+}
+
+async function getENS(address){
+    return new Promise(async function(resolve) {
+        var name = await ensProvider.lookupAddress(address);
+        if (name) {
+            resolve(name);
+        } else {
+            resolve('');
+        }
+    });
 }
 
 async function getSafeAddress(address, deploy) {
@@ -172,6 +184,7 @@ async function getAuth(req, res, next) {
         } else {
             const compKey = payload.wallets[0].public_key;
             address = ethers.utils.computeAddress(`0x${compKey}`);
+            address = address.toLowerCase();
             payload.wallets[0].address = address;
         }
         const userRef = db.collection('users').doc(address);
@@ -217,15 +230,27 @@ api.get("/api", async function (req, res) {
 
 api.post("/api/post", getAuth, async function (req, res) {
     console.log("req.user", JSON.stringify(req.user));
-    var data = req.q;
+    var data = {};
+    data.title = req.q.title;
+    data.prompt = req.q.prompt;
+    data.category = req.q.category;
+    data.price = req.q.price;
+    data.currency = req.q.currency;
+    data.type = req.q.type;
+    data.selfmint = req.q.selfmint;
+    data.mintable = req.q.mintable;
     data.user = req.user.address;
-    data.name = req.user.name;
-    data.profileImage = req.user.profileImage;
+    data.name = req.user.name ? req.user.name: '';
+    data.profileImage = req.user.profileImage ? req.user.profileImage : '';
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     data.minted = false;
+    console.log("art data", JSON.stringify(data));
     const doc = await db.collection('posts').add(data);
     await generate(data.prompt, doc.id);
     data.id = doc.id;
+    await db.collection('users').doc(req.user.address).update({
+        postCount: firebase.firestore.FieldValue.increment(1)
+    });
     return res.json(data);
 });
 
@@ -233,13 +258,16 @@ api.post("/api/comment", getAuth, async function (req, res) {
     console.log("req.user", JSON.stringify(req.user));
     var data = {};
     data.user = req.user.address;
-    data.name = req.user.name;
-    data.profileImage = req.user.profileImage;
+    data.name = req.user.name ? req.user.name: '';
+    data.profileImage = req.user.profileImage ? req.user.profileImage : '';
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     data.comment = req.q.comment;
     const doc = await db.collection('posts').doc(req.q.id).collection("comments").add(data);
     data.postId = req.q.id;
     data.id = doc.id;
+    await db.collection('posts').doc(req.q.id).update({
+        commentCount: firebase.firestore.FieldValue.increment(1)
+    });
     return res.json(data);
 });
 
@@ -247,11 +275,32 @@ api.post("/api/like", getAuth, async function (req, res) {
     console.log("req.user", JSON.stringify(req.user));
     var data = {};
     data.user = req.user.address;
-    data.name = req.user.name;
-    data.profileImage = req.user.profileImage;
+    data.name = req.user.name ? req.user.name: '';
+    data.profileImage = req.user.profileImage ? req.user.profileImage : '';
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     const doc = await db.collection('posts').doc(req.q.id).collection("likes").add(data);
+    await db.collection('posts').doc(req.q.id).update({
+        likeCount: firebase.firestore.FieldValue.increment(1)
+    });
     return res.json(data);
+});
+
+api.post("/api/follow", getAuth, async function (req, res) {
+    console.log("req.user", JSON.stringify(req.user));
+    const follower = req.user.address;
+    const followed = req.q.address;
+    if (follower == followed) {
+        return res.json({"error": "cannot follow yourself"});
+    }    
+    await db.collection('users').doc(follower).update({
+        following: firebase.firestore.FieldValue.arrayUnion(followed),
+        followingCount: firebase.firestore.FieldValue.increment(1)
+    });
+    await db.collection('users').doc(followed).update({
+        followers: firebase.firestore.FieldValue.arrayUnion(follower),
+        followerCount: firebase.firestore.FieldValue.increment(1)
+    });
+    return res.json({"result": "ok"});
 });
 
 api.get("/api/profile", getAuth, async function (req, res) {
@@ -359,6 +408,22 @@ api.post("/api/login", async function (req, res) {
 });
 
 module.exports.api = api;
+
+module.exports.newUser = async function(snap, context) {
+    const user = snap.data();
+    const address = user.address;
+    if (!address) {
+      return;
+    }
+    var ens = await getENS(address);
+    if (ens) {
+        const userRef = snap.ref;
+        await userRef.update({
+            "name": ens
+        });
+    }
+    return;
+}
 
 //export async function api(req, res) {
 module.exports.apiOld = async function(req,res) {

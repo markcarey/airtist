@@ -15,6 +15,7 @@ const db = firebase.firestore();
 var resetFeed, resetProfile, resetUsers;
 var posts = {};
 var users = {};
+var loggedInUser;
 
 const path = window.location.pathname.split('/');
 var currentPage = "feed";
@@ -76,7 +77,7 @@ let provider = null;
         if (web3auth.connectedAdapterName === "openlogin") {
             $("#sign-tx").show();
         }
-        loadProfile();
+        loadUserProfile();
     } else {
         $(".btn-logged-out").show();
         $(".btn-logged-in").hide();
@@ -91,14 +92,18 @@ function uiConsole(...args) {
     console.log(JSON.stringify(args || {}, null, 2));
 }
 
-async function loadProfile () {
+async function loadUserProfile () {
     const headers = await getHeaders();
     const res = await fetch('/api/profile', { 
         method: 'GET', 
         headers: new Headers(headers)
     });
     var user = await res.json();
+    loggedInUser = user;
     if ("address" in user) {
+        if (!user.profileImage) {
+            user.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
+        }
         $("img.header-avatar").attr("src", user.profileImage);
         if (resetProfile) {
             resetProfile();
@@ -114,14 +119,62 @@ async function loadProfile () {
                     } else {
                         $( "#sidebar-profile").replaceWith( getSidebarProfileHTML(meta) );
                     }
-                    if ( $( "#profile-cover" ).length <= 0 ) {
-                        $("#profile").prepend( getProfileCoverHTML(meta) );
-                    } else {
-                        $( "#profile-cover").replaceWith( getProfileCoverHTML(meta) );
+                    if (currentPage == "profile") {
+                        if (!idForPage) {
+                            loadProfile(meta.address);
+                            if ( $( "#profile-cover" ).length <= 0 ) {
+                                //$("#profile").prepend( getProfileCoverHTML(meta) );
+                            } else {
+                                //$( "#profile-cover").replaceWith( getProfileCoverHTML(meta) );
+                            }
+                        }
                     }
                 });
             });
     } // if "address"
+}
+
+async function loadProfile (address) {
+    if (resetProfile) {
+        resetProfile();
+    }
+    resetProfile = db.collection("users").where("address", "==", address)
+        .onSnapshot((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                console.log("user", JSON.stringify(doc.data()));
+                var meta = doc.data();
+                users[meta.address] = meta;
+                users[meta.address].doc = doc;
+                if ( $( "#profile-cover" ).length <= 0 ) {
+                    $("#profile").prepend( getProfileCoverHTML(meta) );
+                } else {
+                    $( "#profile-cover").replaceWith( getProfileCoverHTML(meta) );
+                }
+            });
+
+            db.collection("posts").orderBy("timestamp", "asc").where("user", "==", address)
+                .onSnapshot((querySnapshot) => {
+                    var count = 0;
+                    querySnapshot.forEach((doc) => {
+                        count++;
+                        console.log("post", JSON.stringify(doc.data()));
+                        var meta = doc.data();
+                        meta.id = doc.id;
+                        posts[meta.id] = meta;
+                        posts[meta.id].doc = doc;
+                        if ( $( "#post-grid-" + doc.id ).length <= 0 ) {
+                            meta.type = "post";
+                            $("#grid-posts").prepend( getGridPostHTML(meta) );
+                        } else {
+                            meta.type = "post";
+                            $( "#post-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
+                        }
+                    });
+                });
+
+
+
+        });
 }
 
 async function loadUsers () {
@@ -159,7 +212,9 @@ function loadFeed () {
     }
     resetFeed = db.collection("posts").orderBy("timestamp", "asc")
         .onSnapshot((querySnapshot) => {
+            var count = 0;
             querySnapshot.forEach((doc) => {
+                count++;
                 console.log("post", JSON.stringify(doc.data()));
                 var meta = doc.data();
                 meta.id = doc.id;
@@ -184,6 +239,15 @@ function loadFeed () {
                     meta.type = "trending";
                     $( "#trending-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
                 }
+                if (count <= 10) {
+                    if ( $( "#sidebar-trending-" + doc.id ).length <= 0 ) {
+                        meta.type = "trending";
+                        $("#sidebar-trending").prepend( getSidebarTrendingPostsHTML(meta) );
+                    } else {
+                        meta.type = "trending";
+                        $( "#sidebar-trending-" + doc.id ).replaceWith( getSidebarTrendingPostsHTML(meta) );
+                    }
+                }
 
                 doc.ref.collection("comments").orderBy("timestamp", "asc")
                     .onSnapshot((querySnapshot) => {
@@ -191,55 +255,66 @@ function loadFeed () {
                             console.log("comment", JSON.stringify(comment.data()));
                             var c = comment.data();
                             c.id = comment.id;
-                            $(`#comments-${doc.id}`).append( getCommentHTML(c) );
+                            if ( $( "#comment-" + c.id ).length <= 0 ) {
+                                $(`#comments-${doc.id}`).append( getCommentHTML(c) );
+                            } else {
+                                $( "#comment-" + c.id ).replaceWith( getCommentHTML(c) );
+                            }
                         });
                     });
 
                 doc.ref.collection("likes").orderBy("timestamp", "desc")
-                    .onSnapshot((querySnapshot) => {
-                        var count = 0;
-                        var html = '';
-                        var first = '';
-                        querySnapshot.forEach((like) => {
-                            count++;
-                            console.log("like", JSON.stringify(like.data()));
-                            var l = like.data();
-                            l.id = like.id;
-                            if (count == 1) {
-                                first = l.name;
-                                if (!first) {
-                                    first = abbrAddress(l.user);
-                                }
-                                if (!l.profileImage) {
-                                    l.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + l.user + "/image";
-                                }
-                                html += `
-                                <div id="like-avatars-${doc.id}" class="flex items-center">
-                                <img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900">
-                                `;
-                            }
-                            if ( (count) > 1 && (count <= 3) ) {
-                                html += `<img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 -ml-2">`;
-                            }
-                        });
-                        if (count > 1) {
-                            html += `
-                                </div>
-                                <div class="like-summary dark:text-gray-100">
-                                    Liked by <strong>${first}</strong> and <strong> ${count-1} others </strong>
-                                </div>
-                            `;
-                        } else if (count == 1) {
-                            html += `
-                                </div>
-                                <div class="like-summary dark:text-gray-100">
-                                    Liked by <strong>${first}</strong>
-                                </div>
-                            `;
-                        }
+                    .onSnapshot(async (querySnapshot) => {
+                        const html = await getLikeSummaryHTML(doc, querySnapshot);
                         $(`#like-summary-${doc.id}`).html(html);
                     });
             });
+    });
+}
+
+async function getLikeSummaryHTML(doc, querySnapshot) {
+    return new Promise(async (resolve, reject) => {
+        var count = 0;
+        var html = '';
+        var first = '';
+        await querySnapshot.forEach((like) => {
+            count++;
+            console.log("like", JSON.stringify(like.data()));
+            var l = like.data();
+            l.id = like.id;
+            if (count == 1) {
+                first = l.name;
+                if (!first) {
+                    first = abbrAddress(l.user);
+                }
+                if (!l.profileImage) {
+                    l.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + l.user + "/image";
+                }
+                html += `
+                <div id="like-avatars-${doc.id}" class="flex items-center">
+                <img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900">
+                `;
+            }
+            if ( (count) > 1 && (count <= 3) ) {
+                html += `<img src="${l.profileImage}" alt="" class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 -ml-2">`;
+            }
+        });
+        if (count > 1) {
+            html += `
+                </div>
+                <div class="like-summary dark:text-gray-100">
+                    Liked by <strong>${first}</strong> and <strong> ${count-1} others </strong>
+                </div>
+            `;
+        } else if (count == 1) {
+            html += `
+                </div>
+                <div class="like-summary dark:text-gray-100">
+                    Liked by <strong>${first}</strong>
+                </div>
+            `;
+        }
+        resolve(html);
     });
 }
 
@@ -305,6 +380,30 @@ async function like(data) {
     updateLikes(data.id);
 }
 
+async function postModal(data) {
+    $("#story-modal").html( getModalHTML(data) );
+    const doc = data.doc;
+    await doc.ref.collection("likes").orderBy("timestamp", "desc")
+        .onSnapshot(async (querySnapshot) => {
+            const html = await getLikeSummaryHTML(doc, querySnapshot);
+            console.log(html, doc.id);
+            $(`#modal-like-summary-${doc.id}`).html(html);
+        });
+    await doc.ref.collection("comments").orderBy("timestamp", "asc")
+        .onSnapshot(async (querySnapshot) => {
+            querySnapshot.forEach((comment) => {
+                console.log("comment", JSON.stringify(comment.data()));
+                var c = comment.data();
+                c.id = comment.id;
+                if ( $( "#modal-comment-" + c.id ).length <= 0 ) {
+                    $(`#modal-comments-${doc.id}`).append( getModalCommentHTML(c) );
+                } else {
+                    $( "#modal-comment-" + c.id ).replaceWith( getModalCommentHTML(c) );
+                }
+            });
+        });
+}
+
 async function updateLikes(id) {
     // TODO:
 }
@@ -316,6 +415,9 @@ $( document ).ready(function() {
         $("#feed").show();
     } else if (currentPage == "profile") {
         $(".view").hide();
+        if (idForPage) {
+            loadProfile(idForPage);
+        }
         $("#profile").show();
     } else if (currentPage == "trending") {
         $(".view").hide();
@@ -375,7 +477,8 @@ $( document ).ready(function() {
             const user = await web3auth.getUserInfo();
             uiConsole(user);
             if ($.isEmptyObject(user)) {
-                // TODO: ?
+                // Wallet user
+                await web3auth.authenticateUser();
             } else {
                 if ("profileImage" in user) {
                     $("img.header-avatar").attr("src", user.profileImage);
@@ -411,6 +514,14 @@ $( document ).ready(function() {
         $(`#comment-text-${id}`).focus();
         return false;
     });
+
+    $( "#story-modal" ).on( "click", ".comment-link", async function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        $(`#modal-comment-text-${id}`).focus();
+        return false;
+    });
+
     $( "#feed-posts" ).on( "click", ".comment-button", async function(e) {
         e.preventDefault();
         console.log("comment!");
@@ -425,7 +536,7 @@ $( document ).ready(function() {
         return false;
     });
 
-    $( "#feed-posts" ).on( "click", ".like-button", async function(e) {
+    $( "#feed-posts, #story-modal" ).on( "click", ".like-button", async function(e) {
         e.preventDefault();
         console.log("like!");
         var data = {};
@@ -435,6 +546,29 @@ $( document ).ready(function() {
         $(this).find('i').css("color", "red");
         $(this).find('.like-button-text').text(" Liked");
         return false;
+    });
+
+    $( "#story-modal" ).on( "click", ".comment-button", async function(e) {
+        e.preventDefault();
+        console.log("comment!");
+        var data = {};
+        data.id = $(this).data('id');
+        data.comment = $(`#modal-comment-text-${data.id}`).val();
+        if (!data.comment) {
+            // TODO: error, comment required
+            return false;
+        }
+        comment(data);
+        $(`#modal-comment-text-${data.id}`).val('');
+        return false;
+    });
+
+    $( "#feed-posts, #grid-posts, #trending-grid, #sidebar-trending" ).on( "click", ".post-modal", async function(e) {
+        console.log("post modal!");
+        const id = $(this).data('id');
+        var data = posts[id];
+        postModal(data);
+        return true;
     });
 
     $(".logout").click(async function (event) {
@@ -649,7 +783,7 @@ function getCommentHTML(data) {
 function getSidebarProfileHTML(data) {
     var html = '';
     if (!data.name) {
-        data.name = abbrAddress(data.user);
+        data.name = abbrAddress(data.address);
     }
     if (!data.profileImage) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
@@ -727,7 +861,7 @@ function getProfileCoverHTML(data) {
     data.name = abbrAddress(data.address);
   }
   if (!data.profileImage) {
-    data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
+    data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
   }
   html = `
     <div id="profile-cover" class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
@@ -883,14 +1017,14 @@ function getModalHTML(data) {
                         <i  class="icon-feather-more-horizontal text-2xl rounded-full p-2 transition -mr-1"></i>
                     </a>
                 </div>
-                <div class="story-content p-4" data-simplebar>
+                <div class="story-content p-4" data-simplebarX>
 
                     <p> ${data.title} </p>
                     
                     <div class="py-4 ">
                         <div class="flex justify-around">
                             <a href="#" data-id="${data.id}" class="like-button flex items-center space-x-3">
-                                <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> Like</div>
+                                <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> <span class="like-button-text">Like</span></div>
                             </a>
                             <a href="#" data-id="${data.id}" class="comment-link flex items-center space-x-3">
                                 <div class="flex font-bold items-baseline"> <i class="uil-comment-alt-message mr-1"> </i> Comment</div>
@@ -914,8 +1048,9 @@ function getModalHTML(data) {
                 <div class="p-3 border-t dark:border-gray-600">
                     <div class="bg-gray-200 dark:bg-gray-700 rounded-full rounded-md relative">
                         <input type="text" id="modal-comment-text-${data.id}" data-id="${data.id}" placeholder="Add your Comment.." class="bg-transparent max-h-8 shadow-none">
-                        <a href="#" data-id="${data.id}" class="comment-button"> <i class="uil-arrow-circle-right"></i></a>
-                        </div>
+                        <div class="absolute bottom-0 flex h-full items-center right-0 right-3 text-xl space-x-2">
+                            <a href="#" data-id="${data.id}" class="comment-button"> <i class="uil-arrow-circle-right"></i></a>
+                        </div>                        
                     </div>
                 </div>
 
@@ -935,7 +1070,7 @@ function getModalCommentHTML(data) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
     }
     html = `
-    <div class="flex flex-1 items-center space-x-2">
+    <div id="modal-comment-${data.id}" class="flex flex-1 items-center space-x-2">
         <img src="${data.profileImage}" class="rounded-full w-8 h-8">
         <div class="flex-1 p-2">
             ${data.comment}
@@ -954,8 +1089,8 @@ function getSidebarTrendingPostsHTML(data) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
     }
     html = `
-    <div class="bg-red-500 max-w-full h-40 rounded-lg relative overflow-hidden uk-transition-toggle"> 
-        <a href="#story-modal" data-id="${data.id}" class="modal-link" uk-toggle>
+    <div id="sidebar-trending-${data.id}" class="bg-red-500 max-w-full h-40 rounded-lg relative overflow-hidden uk-transition-toggle"> 
+        <a href="#story-modal" data-id="${data.id}" class="post-modal" uk-toggle>
             <img src="/images/${data.id}.png" class="w-full h-full absolute object-cover inset-0">
         </a>
         <div class="flex flex-1 justify-around items-center absolute bottom-0 w-full p-2 text-white custom-overly1 uk-transition-slide-bottom-medium">   

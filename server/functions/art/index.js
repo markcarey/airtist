@@ -140,8 +140,8 @@ async function getAuth(req, res, next) {
     var idToken = null;
     var social = false;
     var socialHeader = req.header("X-web3Auth-Social");
-    if (socialHeader) {
-        social = socialHeader;
+    if (socialHeader == "true") {
+        social = true;
     }
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       console.log('Found "Authorization" header');
@@ -161,6 +161,7 @@ async function getAuth(req, res, next) {
         } else {
             jwksUrl = jwksExternal;
         }
+        console.log("jwksUrl", jwksUrl);
         const jwks = jose.createRemoteJWKSet(new URL(jwksUrl));
         //console.log("jwks", jwks);
         const jwtDecoded = await jose.jwtVerify(idToken, jwks, { algorithms: ["ES256"] });

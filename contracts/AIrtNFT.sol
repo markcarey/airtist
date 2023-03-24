@@ -7,10 +7,14 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import {ERC2771ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
+import '@openzeppelin/contracts/utils/Strings.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
 contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, AccessControlUpgradeable, ERC2771ContextUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
+    using SafeERC20 for IERC20;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     CountersUpgradeable.Counter private _tokenIdCounter;
@@ -30,10 +34,14 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return string(abi.encodePacked('https://api.airtist.xyz/meta/', address(this), '/'));
+        return string(abi.encodePacked('https://api.airtist.xyz/meta/', Strings.toHexString(uint160(address(this)), 20), '/'));
     }
 
-    function safeMint(address to) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, uint256 amount, address currency) public onlyRole(MINTER_ROLE) {
+        if ( (amount > 0) && ( currency != address(0) ) ) {
+            IERC20 token = IERC20(currency);
+            token.safeTransferFrom(to, _msgSender(), amount);  // TODO: change fee recipient for production
+        }
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);

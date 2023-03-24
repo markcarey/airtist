@@ -19,6 +19,15 @@ module.exports = {
             runs: 1000
           }
         }
+      },
+      {
+        version: "0.8.2",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000
+          }
+        }
       }
     ] 
 },
@@ -39,7 +48,7 @@ module.exports = {
       url: API_URL_GOERLI,
       accounts: [`0x${PRIVATE_KEY}`],
       gasMultiplier: 10,
-      gasPrice: 1000000000 * 100,
+      gasPrice: 1000000000 * 200,
       blockGasLimit: 0x1fffffffffffff
     }
   },

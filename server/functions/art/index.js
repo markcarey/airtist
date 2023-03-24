@@ -478,7 +478,7 @@ module.exports.newPost = async function(snap, context) {
                 // TODO: rest of approval steps: create, sign, execute
 
                 // update user doc
-                await userRef.update({
+                await userDoc.ref.update({
                     "safeDeployed": true
                 });
             } // if safe deployed

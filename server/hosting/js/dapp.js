@@ -534,7 +534,7 @@ $( document ).ready(function() {
                     $("img.header-avatar").attr("src", user.profileImage);
                 }
             }
-            loadProfile();
+            loadUserProfile();
         } catch (error) {
             console.error(error.message);
         }
@@ -1038,6 +1038,7 @@ function getSidebarUserHTML(data) {
     }
     var followButton = `<a href="#" data-address="${data.address}" class="follow-button border border-gray-200 font-semibold px-4 py-1 rounded-full hover:bg-pink-600 hover:text-white hover:border-pink-600 dark:border-gray-800"> Follow </a>`;
     if (loggedInUser) {
+        const target = data.address;
         if ("following" in loggedInUser) {
             const following = loggedInUser.following.map(address => address.toLowerCase());
             if (following.includes(target.toLowerCase())) {

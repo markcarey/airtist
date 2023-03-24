@@ -34,6 +34,12 @@ const GelatoRelayAdapter = relayKit.GelatoRelayAdapter;
 const relayAdapter = new GelatoRelayAdapter(process.env.GELATO_API_KEY);
 //console.log(relayAdapter);
 
+//import { GelatoRelaySDK } from "@gelatonetwork/relay-sdk";
+const GelatoRelaySDK = require("@gelatonetwork/relay-sdk");
+//console.log("GelatoRelaySDK", GelatoRelaySDK);
+const relay = new GelatoRelaySDK.GelatoRelay();
+//console.log("relay", relay);
+
 const fetch = require('node-fetch');
 
 const { Configuration, OpenAIApi } = require("openai");
@@ -423,7 +429,91 @@ module.exports.newUser = async function(snap, context) {
         });
     }
     return;
-}
+} // newUser
+
+module.exports.newPost = async function(snap, context) {
+    const post = snap.data();
+    const mintIt = post.selfmint;
+    console.log("mintIt is " + mintIt, JSON.stringify(post));
+    if (mintIt) {
+        const postDoc = snap.ref;
+        console.log('needs minting');
+        const userDoc = await db.collection('users').doc(post.user).get();
+        if (userDoc.exists) {
+            const user = userDoc.data();
+            if (user.safeDeployed == false) {
+                // first, deploy the safe
+                const safeAddress = await getSafeAddress(user.address, true);
+                if (safeAddress != user.safeAddress) {
+                    console.log(`address of deployed safe (${safeAddress}) does not match predicted address (${user.safeAddress}) for user ${user.address}`);
+                }
+                // TODO: send enableFallback Txn for Safe
+                const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+                const ethAdapter = new EthersAdapter({
+                    "ethers": ethers,
+                    "signerOrProvider": signer
+                });
+                const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
+                //const safeTransaction = safeSDK.createEnableFallbackHandlerTx(process.env.FALLBACK_HANDLER_ADDR);
+                //const signedSafeTransaction = await safeSDK.signTransaction(safeTransaction);
+                //console.log("signedSafeTransaction", JSON.stringify(signedSafeTransaction));
+                //const executeTxResponse = await safeSDK.executeTransaction(signedSafeTransaction);
+                //console.log("executeTxResponse", JSON.stringify(executeTxResponse));
+
+                // approve txn data. TODO: fill in contracts for $AIrt and $WETH
+                const approveABI = ["function approve(address spender, uint256 amount)"];
+                const data = ""; // TODO: finish this later
+                const approveTransactionData = [
+                    {
+                        "to": process.env.AIRTIST_ADDR,
+                        "data": data,
+                        "value": 0
+                    },
+                    {
+                        "to": process.env.AIRTIST_ADDR,
+                        "data": data,
+                        "value": 0
+                    }
+                ];
+                // TODO: rest of approval steps: create, sign, execute
+
+                // update user doc
+                await userRef.update({
+                    "safeDeployed": true
+                });
+            } // if safe deployed
+
+            // relay the mint
+            const mintAbi = ["function safeMint(address to)"];
+            // Generate the target payload
+            const contract = new ethers.Contract(process.env.AIRTIST_ADDR, mintAbi, signer);
+            const { mintData } = await contract.populateTransaction.safeMint(user.safeAddress);
+            console.log(mintData);
+            const request = {
+                "chainId": provider.network.chainId,
+                "target": process.env.AIRTIST_ADDR,
+                "data": mintData,
+                "user": await signer.getAddress()
+            };
+            console.log("request", request);
+            const relayResponse = await relay.sponsoredCallERC2771(
+                request,
+                signer,
+                process.env.GELATO_API_KEY
+            );
+            if ("taskId" in relayResponse) {
+                await userRef.update({
+                    "mintTaskId": relayResponse.taskId
+                });
+            } else {
+                console.log("error: relay error", JSON.stringify(relayResponse));
+            }
+        } else {
+            console.log("user not found for " + post.user);
+        } // if user
+    }
+    return;
+} // newPost
 
 //export async function api(req, res) {
 module.exports.apiOld = async function(req,res) {
@@ -469,18 +559,21 @@ module.exports.apiOld = async function(req,res) {
     const safeDeploymentConfig = {
         //"saltNonce": EOAaddress    // TODO: pass this from client web3auth
     }
-    const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig });
+    //const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig });
 
-    const safeAddress = safeSdkOwner1.getAddress();
+    //const safeAddress = safeSdkOwner1.getAddress();
+    const safeAddress = await getSafeAddress(process.env.SIDEDOOR_COLD, false);
 
     console.log('Your Safe has been deployed:');
     console.log(`https://goerli.etherscan.io/address/${safeAddress}`);
     console.log(`https://app.safe.global/gor:${safeAddress}`);
 
-    const abi = ["function mint(address to)"];
+    //const abi = ["function mint(address to)"];
+    const abi = ["function safeMint(address to)"];
     // Generate the target payload
     const contract = new ethers.Contract(process.env.AIRTIST_ADDR, abi, signer);
-    const { data } = await contract.populateTransaction.mint(safeAddress);
+    const testAddress = "0x0F74e1B1b88Dfe9DE2dd5d066BE94345ab0590F1";
+    const { data } = await contract.populateTransaction.safeMint(testAddress);
     console.log(data);
 
     const txnData = {
@@ -489,6 +582,7 @@ module.exports.apiOld = async function(req,res) {
         "value": 0
     };
       
+    if (false) {
     const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
     //const safeSDK = await Safe.create({ ethAdapter, "safeAddress": "0xAd534BE4F45d6E61a4FfB2eb6eabF5EADB2BCF8c" });  // change this!!!
     const safeTransaction = await safeSDK.createTransaction({ "safeTransactionData": txnData });
@@ -499,10 +593,12 @@ module.exports.apiOld = async function(req,res) {
     console.log("signedSafeTransaction", JSON.stringify(signedSafeTransaction));
     //const executeTxResponse = await safeSDK.executeTransaction(signedSafeTransaction);
     //console.log("executeTxResponse", JSON.stringify(executeTxResponse));
+    }
 
     const options = {
         isSponsored: true // This parameter is mandatory to use the 1Balance method
     }
+    if (false) {
     const gelatoTask = await relayAdapter.relayTransaction({
         "target": process.env.AIRTIST_ADDR, 
         "encodedTransaction": data,
@@ -510,5 +606,33 @@ module.exports.apiOld = async function(req,res) {
         options
     });
     console.log(gelatoTask);
-    return res.json({"safe": safeAddress, "task": gelatoTask});
+    }
+
+
+    const request = {
+        "chainId": provider.network.chainId,
+        "target": process.env.AIRTIST_ADDR,
+        "data": data,
+        "user": await signer.getAddress()
+    };
+    //const relayResponse = await relay.sponsoredCallERC2771(request, provider, process.env.GELATO_API_KEY);
+    //const relayResponse = await relay.sponsoredCallERC2771(
+    //    {"request": request},
+    //    {"walletOrProvider": 
+    //        {
+    //            "provider": provider
+    //        }
+    //    },
+    //    {"sponsorApiKey": process.env.GELATO_API_KEY}
+    //);
+
+    console.log("request", request);
+
+    const relayResponse = await relay.sponsoredCallERC2771(
+        request,
+        signer,
+        process.env.GELATO_API_KEY
+    );
+    
+    return res.json({"safe": safeAddress, "task": relayResponse});
 }

@@ -2848,4 +2848,19 @@ header .uk-dropdown {
     position: absolute;
   }
 }
- 
+
+.nav-badge {
+    display: inline-block;
+    font-weight: 700;
+    height: 19px;
+    width: 19px;
+    line-height: 19px;
+    text-align: center;
+    color: #fff;
+    font-size: 11px;
+    background-color: #be185d;
+    border-radius: 50%;
+    position: relative;
+    margin: -19px 0 0px -19px;
+    top: -2px;  
+}

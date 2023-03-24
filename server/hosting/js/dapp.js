@@ -445,19 +445,20 @@ function updateFollowButtons() {
     }    
 }
 
-
-
-$( document ).ready(function() {
-
+function navigateTo(currentPage, idForPage) {
     if (currentPage == "feed") {
         $(".view").hide();
         $("#feed").show();
         $(".menu").removeClass("active");
         $(".menu-feed").addClass("active");
+        history.pushState({}, "", "/");
     } else if (currentPage == "profile") {
         $(".view").hide();
         if (idForPage) {
             loadProfile(idForPage);
+            history.pushState({}, "", `/profile/${idForPage}`);
+        } else {
+            history.pushState({}, "", "/profile/");
         }
         $("#profile").show();
         $(".menu").removeClass("active");
@@ -467,12 +468,21 @@ $( document ).ready(function() {
         $("#trending").show();
         $(".menu").removeClass("active");
         $(".menu-trending").addClass("active");
+        history.pushState({}, "", "/trending/");
     } else if (currentPage == "settings") {
         $(".view").hide();
         $("#settings").show();
         $(".menu").removeClass("active");
         $(".menu-settings").addClass("active");
+        history.pushState({}, "", "/settings/");
     }
+}
+
+
+
+$( document ).ready(function() {
+
+    navigateTo(currentPage, idForPage);
 
     loadFeed();
     loadUsers();
@@ -639,11 +649,22 @@ $( document ).ready(function() {
         return false;
     });
 
+    $(".menu").find("a").click(function(e){
+        const page = $(this).data("page");
+        if (page) {
+            navigateTo(page);
+            return false;
+        } else {
+            return true;
+        }
+    });
+
     $(".logout").click(async function (event) {
         try {
             await web3auth.logout();
             $(".btn-logged-in").hide();
             $(".btn-logged-out").show();
+            navigateTo("feed");
         } catch (error) {
             console.error(error.message);
         }

@@ -441,6 +441,7 @@ module.exports.newPost = async function(snap, context) {
         const userDoc = await db.collection('users').doc(post.user).get();
         if (userDoc.exists) {
             const user = userDoc.data();
+            const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
             if (user.safeDeployed == false) {
                 // first, deploy the safe
                 const safeAddress = await getSafeAddress(user.address, true);
@@ -448,7 +449,6 @@ module.exports.newPost = async function(snap, context) {
                     console.log(`address of deployed safe (${safeAddress}) does not match predicted address (${user.safeAddress}) for user ${user.address}`);
                 }
                 // TODO: send enableFallback Txn for Safe
-                const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
                 const ethAdapter = new EthersAdapter({
                     "ethers": ethers,
                     "signerOrProvider": signer
@@ -484,15 +484,17 @@ module.exports.newPost = async function(snap, context) {
             } // if safe deployed
 
             // relay the mint
-            const mintAbi = ["function safeMint(address to)"];
+            const abi = ["function safeMint(address to)"];
             // Generate the target payload
-            const contract = new ethers.Contract(process.env.AIRTIST_ADDR, mintAbi, signer);
-            const { mintData } = await contract.populateTransaction.safeMint(user.safeAddress);
-            console.log(mintData);
+            const contract = new ethers.Contract(process.env.AIRTIST_ADDR, abi, signer);
+            console.log("user.safeAddres", user.safeAddress);
+            const { data } = await contract.populateTransaction.safeMint(user.safeAddress);
+            console.log(data);
+            const network = await provider.getNetwork();
             const request = {
-                "chainId": provider.network.chainId,
+                "chainId": network.chainId,
                 "target": process.env.AIRTIST_ADDR,
-                "data": mintData,
+                "data": data,
                 "user": await signer.getAddress()
             };
             console.log("request", request);
@@ -502,7 +504,7 @@ module.exports.newPost = async function(snap, context) {
                 process.env.GELATO_API_KEY
             );
             if ("taskId" in relayResponse) {
-                await userRef.update({
+                await userDoc.ref.update({
                     "mintTaskId": relayResponse.taskId
                 });
             } else {

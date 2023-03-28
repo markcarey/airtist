@@ -5,7 +5,8 @@ const dot = require('dotenv').config();
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-web3");
-require("@nomiclabs/hardhat-waffle");
+//require("@nomiclabs/hardhat-waffle");
+require("@nomicfoundation/hardhat-chai-matchers");
 const { API_URL_GOERLI, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 module.exports = {
@@ -37,18 +38,18 @@ module.exports = {
       accounts: [{ privateKey: `0x${PRIVATE_KEY}`, balance: "10000000000000000000000"}],
       forking: {
         url: API_URL_GOERLI,
-        blockNumber: 25689025
+        blockNumber: 8717392
       },
       loggingEnabled: true,
-      gasMultiplier: 7,
-      gasPrice: 1000000000 * 5,
+      gasMultiplier: 10,
+      gasPrice: 1000000000 * 500,
       blockGasLimit: 0x1fffffffffffff
     },
     goerli: {
       url: API_URL_GOERLI,
       accounts: [`0x${PRIVATE_KEY}`],
       gasMultiplier: 10,
-      gasPrice: 1000000000 * 200,
+      gasPrice: 1000000000 * 10,
       blockGasLimit: 0x1fffffffffffff
     }
   },
@@ -60,3 +61,4 @@ module.exports = {
 }
 
 // npx hardhat verify --network goerli 0x
+

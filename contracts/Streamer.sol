@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
-
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
 import { ISuperfluid, ISuperToken, ISuperAgreement } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
@@ -8,10 +7,11 @@ import { ISuperTokenFactory } from "@superfluid-finance/ethereum-contracts/contr
 import { INativeSuperToken } from "./superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/INativeSuperToken.sol"; 
 import { NativeSuperTokenProxy } from "./superfluid-finance/ethereum-contracts/contracts/tokens/NativeSuperToken.sol";
 import { CFAv1Library } from "./superfluid-finance/ethereum-contracts/contracts/apps/CFAv1Library.sol";
+import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Streamer is AccessControl {
+contract Streamer is AccessControl, ERC2771Context {
     using SafeMath for uint256;
     using CFAv1Library for CFAv1Library.InitData;
 
@@ -23,7 +23,8 @@ contract Streamer is AccessControl {
 
     bytes32 public constant STREAM_MANAGER_ROLE = keccak256("STREAM_MANAGER_ROLE");
 
-    constructor(string memory name, string memory symbol, uint256 supply, address _stf, address host, address cfa) {
+    constructor(string memory name, string memory symbol, uint256 supply, address _stf, address host, address cfa) 
+        ERC2771Context(0xBf175FCC7086b4f9bd59d5EAE8eA67b8f940DE0d) {
         token = INativeSuperToken(address(new NativeSuperTokenProxy()));
         _superTokenFactory = ISuperTokenFactory(_stf);
         _superTokenFactory.initializeCustomSuperToken(address(token));
@@ -40,6 +41,14 @@ contract Streamer is AccessControl {
             token.transfer(to, amount);
         }
         cfaV1.flow(to, token, flowRate);
+    }
+
+     function _msgSender() internal view override(ERC2771Context, Context) returns (address) {
+        return super._msgSender();
+    }
+
+    function _msgData() internal view override(ERC2771Context, Context) returns (bytes calldata) {
+        return super._msgData();
     }
 
 }

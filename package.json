@@ -1,14 +1,18 @@
 {
   "devDependencies": {
     "@gelatonetwork/relay-context": "^2.1.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomiclabs/hardhat-ethers": "^2.2.2",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.5",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts-upgradeable": "^4.8.2",
     "@superfluid-finance/ethereum-contracts": "^1.4.3",
+    "chai": "^4.3.7",
     "dotenv": "^16.0.3",
+    "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
-    "hardhat": "^2.13.0"
+    "hardhat": "^2.13.0",
+    "mocha": "^10.2.0"
   }
 }

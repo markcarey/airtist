@@ -28,7 +28,7 @@
         "function": "artApi"
       },
       {
-        "source": "/meta/*",
+        "source": "/meta/**",
         "function": "artApi"
       },
       {

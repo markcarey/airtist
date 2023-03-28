@@ -12,14 +12,8 @@ const jose = require('jose');
 
 const { ethers } = require("ethers");
 
-//import { ethers } from 'ethers'
-//import safeEthersLib from '@safe-global/safe-ethers-lib'
-//const EthersAdapter = safeEthersLib.default;
-
-//import { SafeAccountConfig } from '@safe-global/safe-core-sdk'
-//import pkg from '@safe-global/safe-core-sdk';
-//const { SafeAccountConfig } = pkg;
-//import { SafeFactory } from '@safe-global/safe-core-sdk'
+const nftJSON = require(__base + 'art/AIrtNFT.json');
+const factoryJSON = require(__base + 'art/AIrtNFTFactory.json');
 
 const safeCoreSDK = require('@safe-global/safe-core-sdk');
 const Safe = safeCoreSDK.default;
@@ -56,9 +50,16 @@ var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + proc
 
 const jwksSocial = 'https://api.openlogin.com/jwks';
 const jwksExternal = 'https://authjs.web3auth.io/jwks';
+const maxInt = ethers.constants.MaxUint256;
+const THREE_PER_MONTH = "1141552511415"; // flowRate per second for 3 monthly (18 decimals)
+const THIRTY_PER_MONTH = "11415525114150"; // flowRate per second for 30 monthly (18 decimals)
 
 function getContracts(pk, provider) {
     signer = new ethers.Wallet(pk, provider);
+}
+
+function abbrAddress(address){
+    return address.slice(0,4) + "..." + address.slice(address.length - 4);
 }
 
 async function getENS(address){
@@ -105,6 +106,121 @@ async function getSafeAddress(address, deploy) {
             safeAddress = await safeFactory.predictSafeAddress({ safeAccountConfig, safeDeploymentConfig });
         }
         resolve(safeAddress);
+    });
+}
+
+async function doApprovals(safeAddress, nftAddress) {
+    return new Promise(async (resolve, reject) => {
+        const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+        const ethAdapter = new EthersAdapter({
+            "ethers": ethers,
+            "signerOrProvider": signer
+        });
+        const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
+
+        // approve txn data
+        const approveABI = ["function approve(address spender, uint256 amount)"];
+        const pAInt = new ethers.Contract(process.env.PAINT_ADDR, approveABI, signer);
+        const paintTxn = await pAInt.populateTransaction.approve(nftAddress, maxInt);
+        console.log("paintData", paintTxn.data);
+        const weth = new ethers.Contract(process.env.GOERLI_WETH, approveABI, signer);
+        const wethTxn = await weth.populateTransaction.approve(nftAddress, maxInt);
+        console.log("wethData", wethTxn.data);
+        const metaTransactionData = [
+            {
+                "to": process.env.PAINT_ADDR,
+                "data": paintTxn.data,
+                "value": 0
+            },
+            {
+                "to": process.env.GOERLI_WETH,
+                "data": wethTxn.data,
+                "value": 0
+            }
+        ];
+        const safeTransaction = await safeSDK.createTransaction({ "safeTransactionData": metaTransactionData });
+        const signedSafeTransaction = await safeSDK.signTransaction(safeTransaction);
+        console.log("signedSafeTransaction", JSON.stringify(signedSafeTransaction));
+        const executeTxResponse = await safeSDK.executeTransaction(signedSafeTransaction);
+        console.log("executeTxResponse", JSON.stringify(executeTxResponse));
+        resolve(executeTxResponse);
+    });
+}
+
+async function getGelatoNonce(address) {
+    return new Promise(async (resolve, reject) => {
+        const abi = ["function userNonce(address account) external view returns (uint256)"];
+        const contract = new ethers.Contract(process.env.GELATO_RELAY_ERC2771_ADDRESS, abi, provider);
+        const nonce = await contract.userNonce(address);
+        resolve(nonce);
+    });
+}
+
+async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
+    return new Promise(async (resolve, reject) => {
+        const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+        const network = await provider.getNetwork();
+        const abi = factoryJSON.abi;
+        const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, abi, signer);
+        const txn = await factory.populateTransaction.createAIrtNFT(name, symbol);
+        console.log(txn.data);
+        const request = {
+            "chainId": network.chainId,
+            "target": process.env.AIRTIST_FACTORY,
+            "data": txn.data,
+            "user": await signer.getAddress()
+        };
+        console.log("request", request);
+        const nonce = await getGelatoNonce(await signer.getAddress());
+        console.log("nonce", nonce);
+        const relayResponse = await relay.sponsoredCallERC2771(
+            request,
+            signer,
+            process.env.GELATO_API_KEY
+        );
+        console.log(relayResponse, JSON.stringify(relayResponse));
+        // TODO: grant roles to user web3auth address and/or safe address?
+
+
+        // 2. Now update pAINt stream to 30 per month
+        // stream txn
+        const streamABI = ["function stream(address to, int96 flowRate, uint256 amount)"];
+        const streamer = new ethers.Contract(process.env.PAINT_STREAMER, streamABI, signer);
+        const flowRate = THIRTY_PER_MONTH;
+        const drop = "10000000000000000000"; // 10 upgrade bonus
+        const streamTxn = await streamer.populateTransaction.stream(safeAddress, flowRate, drop);
+        console.log("streamData", streamTxn.data);
+        const streamRequest = {
+            "chainId": network.chainId,
+            "target": process.env.PAINT_STREAMER,
+            "data": streamTxn.data,
+            "user": await signer.getAddress(),
+            "userNonce": parseInt(nonce) + 1
+        };
+        console.log("request", streamRequest);
+        const streamRelayResponse = await relay.sponsoredCallERC2771(
+            streamRequest,
+            signer,
+            process.env.GELATO_API_KEY
+        );
+        console.log(streamRelayResponse, JSON.stringify(streamRelayResponse));
+
+        // return *deploy* response
+        resolve(relayResponse);
+    });
+}
+
+async function getBalances(address) {
+    return new Promise(async (resolve, reject) => {
+        var balances = {};
+        const balanceAbi = ["function balanceOf(address owner) view returns (uint256)"];
+        const pAInt = new ethers.Contract(process.env.PAINT_ADDR, balanceAbi, provider);
+        const weth = new ethers.Contract(process.env.GOERLI_WETH, balanceAbi, provider);
+        balances["pAInt"] = await pAInt.balanceOf(address);
+        balances[process.env.PAINT_ADDR] = balances["pAInt"]
+        balances["WETH"] = await weth.balanceOf(address);
+        balances[process.env.GOERLI_WETH] = balances["WETH"]
+        resolve(balances);
     });
 }
 
@@ -203,7 +319,8 @@ async function getAuth(req, res, next) {
                 "address": address
             };
             if ("email" in payload) {
-                data.email = payload.email;
+                // TODO: for now, commented out for security reasons, but better to move to private subcollection, etc.
+                //data.email = payload.email;   
             }
             if ("name" in payload) {
                 data.name = payload.name;
@@ -217,6 +334,8 @@ async function getAuth(req, res, next) {
                 data.safeAddress = safeAddress;
                 data.safeDeployed = false;
             }
+            data.needApprovals = false;
+            data.plan = "free";
             data.postCount = 0;
             data.followerCount = 0;
             data.followingCount = 0;
@@ -250,6 +369,9 @@ api.post("/api/post", getAuth, async function (req, res) {
     data.profileImage = req.user.profileImage ? req.user.profileImage : '';
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     data.minted = false;
+    data.commentCount = 0;
+    data.likeCount = 0;
+    data.repostCount = 0;
     console.log("art data", JSON.stringify(data));
     const doc = await db.collection('posts').add(data);
     await generate(data.prompt, doc.id);
@@ -272,7 +394,8 @@ api.post("/api/comment", getAuth, async function (req, res) {
     data.postId = req.q.id;
     data.id = doc.id;
     await db.collection('posts').doc(req.q.id).update({
-        commentCount: firebase.firestore.FieldValue.increment(1)
+        "commentCount": firebase.firestore.FieldValue.increment(1),
+        "reactionCount": firebase.firestore.FieldValue.increment(1)
     });
     return res.json(data);
 });
@@ -286,7 +409,8 @@ api.post("/api/like", getAuth, async function (req, res) {
     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     const doc = await db.collection('posts').doc(req.q.id).collection("likes").add(data);
     await db.collection('posts').doc(req.q.id).update({
-        likeCount: firebase.firestore.FieldValue.increment(1)
+        "likeCount": firebase.firestore.FieldValue.increment(1),
+        "reactionCount": firebase.firestore.FieldValue.increment(1)
     });
     return res.json(data);
 });
@@ -309,6 +433,55 @@ api.post("/api/follow", getAuth, async function (req, res) {
     return res.json({"result": "ok"});
 });
 
+api.post("/api/repost", getAuth, async function (req, res) {
+    console.log("req.user", JSON.stringify(req.user));
+    var parentId = req.q.parent;
+    const docRef = db.collection('posts').doc(parentId);
+    const doc = await docRef.get();
+    if (doc.exists) {
+        const parent = doc.data();
+        var data = {};
+        data.parentId = parentId;
+        data.title = parent.title;
+        data.prompt = parent.prompt;
+        data.category = parent.category;
+        data.price = 1;
+        data.currency = process.env.PAINT_ADDR;
+        data.type = parent.type;
+        data.selfmint = false;
+        data.mintable = false;
+        data.user = req.user.address;
+        data.name = req.user.name ? req.user.name: '';
+        data.profileImage = req.user.profileImage ? req.user.profileImage : '';
+        data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+        data.minted = false;
+        data.commentCount = 0;
+        data.likeCount = 0;
+        data.repostCount = 0;
+        console.log("art data", JSON.stringify(data));
+        const newDoc = await db.collection('posts').add(data);
+        await generate(data.prompt, newDoc.id);
+        data.id = newDoc.id;
+        await db.collection('users').doc(req.user.address).update({
+            "postCount": firebase.firestore.FieldValue.increment(1)
+        });
+        await docRef.update({
+            "repostCount": firebase.firestore.FieldValue.increment(1),
+            "reactionCount": firebase.firestore.FieldValue.increment(1)
+        });
+        await docRef.collection("reposts").add({
+            "postId": data.id,
+            "user": req.user.address,
+            "name": req.user.name ? req.user.name: '',
+            "profileImage": req.user.profileImage ? req.user.profileImage : '',
+            "timestamp": firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return res.json(data);
+    } else {
+        return res.json({"result": "error", "error": "parent post not found"});
+    }
+});
+
 api.get("/api/profile", getAuth, async function (req, res) {
     // logged in user profile
     console.log("req.user", JSON.stringify(req.user));
@@ -321,6 +494,161 @@ api.get("/api/profile/:address", async function (req, res) {
         return res.json(user.data());
     } else {
         return res.json({"error": "user not found"});
+    }
+});
+
+api.get("/api/balances", getAuth, async function (req, res) {
+    // logged in user profile + balances
+    console.log("req.user", JSON.stringify(req.user));
+    const user = req.user;
+    const balances = await getBalances(user.safeAddress);
+    user.balances = balances;
+    var cache = 'public, max-age=120, s-maxage=240';
+    cache = 'public, max-age=60, s-maxage=120'; // TODO: adjust or remove this!!
+    res.set('Cache-Control', cache);
+    return res.json(user);
+});
+
+api.post("/api/mint", getAuth, async function (req, res) {
+    const user = req.user;
+    const balances = await getBalances(user.safeAddress);
+    var id = req.q.id;
+    const docRef = db.collection('posts').doc(id);
+    const postDoc = await docRef.get();
+    if (postDoc.exists) {
+        const post = postDoc.data();
+        post.id = postDoc.id;
+        var price = post.price;
+        var currency = post.currency;
+        if (currency == "0") {
+            currency = process.env.PAINT_ADDR;
+        }
+        // 1. check if post can be minted by loggedin user
+        var allowed = false;
+        if (post.mintable) {
+            allowed = true;
+        } else {
+            if (user.address.toLowerCase() == post.user.toLowerCase()) {
+                // loggedin user is creator, they can mint for 1 pAInt
+                allowed = true;
+                price = 1;
+                currency = process.env.PAINT_ADDR;
+            }
+        }
+        if (post.minted) {
+            // already minted
+            allowed = false;
+        }
+        console.log("allowed to mint", allowed);
+
+        // 2. Does user have enough balance to mint?
+        const priceInWei = ethers.utils.parseUnits(price.toString(), "ether");
+        console.log("balance and price", balances[currency], priceInWei);
+        if ( balances[currency].gte(priceInWei) ) {
+            // balance is enough
+            // get creator's Safe address first so they can receive payment
+            var creatorSafeAddress;
+            var nftAddress = process.env.AIRTIST_ADDR;
+            const creatorRef = db.collection('users').doc(post.user);
+            const creatorDoc = await creatorRef.get();
+            if (creatorDoc.exists) {
+                var creator = creatorDoc.data();
+                creatorSafeAddress = creator.safeAddress;
+                if ("nftContract" in creator) {
+                    nftAddress = creator.nftContract;
+                }
+            } else {
+                console.log(`user ${post.user} not found`);
+                creatorSafeAddress = process.env.AIRTIST_HOT_PRIV; // default / fallback
+            }
+            // 3. prepare mint txn
+            // Generate the target payload
+            console.log("nftAddress", nftAddress);
+            const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+            const nft = new ethers.Contract(nftAddress, nftJSON.abi, signer);
+            var mintTxn; 
+            if (user.address.toLowerCase() == post.user.toLowerCase()) {
+                mintTxn = await nft.populateTransaction.selfMint(user.safeAddress);
+            } else {
+                mintTxn = await nft.populateTransaction.publicMint(creatorSafeAddress, user.safeAddress, priceInWei, currency);
+            }
+            console.log(mintTxn.data);
+            const network = await provider.getNetwork();
+            const request = {
+                "chainId": network.chainId,
+                "target": nftAddress,
+                "data": mintTxn.data,
+                "user": await signer.getAddress()
+            };
+            console.log("request", request);
+            const relayResponse = await relay.sponsoredCallERC2771(
+                request,
+                signer,
+                process.env.GELATO_API_KEY
+            );
+            console.log(relayResponse, JSON.stringify(relayResponse));
+            if ("taskId" in relayResponse) {
+                await postDoc.ref.update({
+                    "mintStatus": "pending",
+                    "mintTaskId": relayResponse.taskId,
+                    "minterAddress": user.address,
+                    "nftContract": nftAddress.toLowerCase()
+                });
+                const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
+                    "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                    "link": `https://airtist.xyz/p/${post.id}`,
+                    "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                    "text": `Minting has started for `,
+                    "textLink": post.title ? post.title : "this post"
+                });
+                return res.json({
+                    "result": "ok", 
+                    "message": "Minting is underway",
+                    "relay": relayResponse
+                });
+            } else {
+                console.log("error: relay error", JSON.stringify(relayResponse));
+                return res.json({
+                    "result": "error", 
+                    "error": "Minting relay error",
+                    "relay": relayResponse
+                });
+            }
+        } else {
+            return res.json({"result": "error", "error": "insifficient funds", "balances": balances});
+        }
+
+    } else {
+        return res.json({"result": "error", "error": "post not found"});
+    }
+}); 
+
+api.post("/api/upgrade", getAuth, async function (req, res) {
+    var name = req.q.name;
+    var symbol = req.q.symbol;
+    // TODO: 1. stripe subscription stuff goes here !!
+
+    // 2. User has upgraded, deploy contract via Gelato Relay
+    const relayResponse = await deployNFTContractAndUpdateStream(name, symbol, req.user.safeAddress);
+    if ("taskId" in relayResponse) {
+        await db.collection('users').doc(req.user.address).update({
+            "plan": "pro",
+            "deployStatus": "pending",
+            "deployTaskId": relayResponse.taskId,
+            "nftContractName": name,
+            "nftContractSymbol": symbol
+        });
+        return res.json({
+            "result": "ok",
+            "message": "Collection deployment is underway",
+            "relay": relayResponse
+        });
+    } else {
+        console.log("error: relay error", JSON.stringify(relayResponse));
+        return res.json({
+            "result": "error",
+            "error": relayResponse
+        });
     }
 });
 
@@ -354,6 +682,62 @@ api.get('/images/:id.png', async function (req, res) {
     });
     return res.end(img);
 }); // image
+
+api.get('/meta/:nftAddress/:id', async function (req, res) {
+    console.log("start /meta/ with path", req.path);
+    const nftAddress = req.params.nftAddress;
+    const tokenId = req.params.id;
+    console.log("nftAddress and tokenId", nftAddress, tokenId);
+    console.log("tokenId+1", tokenId + 1);
+    console.log("parseInt + 1", parseInt(tokenId) + 1);
+    var cache = 'public, max-age=3600, s-maxage=86400';
+    cache = 'public, max-age=1, s-maxage=2'; // TODO: remove this!!
+
+    var meta;
+  
+    return db.collection("posts").where("nftContract", "==", nftAddress).where("tokenId", "==", parseInt(tokenId))
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                const post = doc.data();
+                const postID = doc.id;
+                meta = {};
+                meta.name = post.title ? post.title : `AIrt #${tokenId}`; // TODO: update this for custom contracts
+                meta.description = post.prompt; // TODO: update this for PRO users who decide to hide prompt
+                meta.external_url = `https://airtist.xyz/p/${postID}`;
+                meta.image = `https://api.airtist.xyz/images/${postID}.png`;
+                meta.attributes = [
+                    {
+                        "trait_type": "Type", 
+                        "value": post.type,
+                    }, 
+                    {
+                        "trait_type": "Category", 
+                        "value": post.category,
+                    },
+                    {
+                        "trait_type": "Creator",
+                        "value": post.user
+                    }
+                ];
+                if ("name" in post) {
+                    meta.attributes.push(
+                        {
+                            "trait_type": "Creator Name",
+                            "value": post.name
+                        }
+
+                    );
+                }
+            });
+            console.log("meta", JSON.stringify(meta));
+            if (!meta) {
+                return res.json({"error": "art not found"});
+            }
+            res.set('Cache-Control', cache);
+            return res.json(meta); 
+        });   
+}); // meta
 
 api.post("/api/login", async function (req, res) {
     var idToken = req.q.idToken;
@@ -431,91 +815,320 @@ module.exports.newUser = async function(snap, context) {
     return;
 } // newUser
 
-module.exports.newPost = async function(snap, context) {
-    const post = snap.data();
+module.exports.newPost = async function(postDoc, context) {
+    const post = postDoc.data();
+    post.id = postDoc.id;
     const mintIt = post.selfmint;
     console.log("mintIt is " + mintIt, JSON.stringify(post));
+    var firstMint = false;
     if (mintIt) {
-        const postDoc = snap.ref;
+        //const postDoc = snap.ref;
         console.log('needs minting');
         const userDoc = await db.collection('users').doc(post.user).get();
         if (userDoc.exists) {
             const user = userDoc.data();
+            // check if user has deployed their own NFT contract
+            var nftAddress = user.nftContract ? user.nftContract : process.env.AIRTIST_ADDR;
             const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+            var doApprovalsNow = false;
             if (user.safeDeployed == false) {
+                firstMint = true;
                 // first, deploy the safe
                 const safeAddress = await getSafeAddress(user.address, true);
                 if (safeAddress != user.safeAddress) {
                     console.log(`address of deployed safe (${safeAddress}) does not match predicted address (${user.safeAddress}) for user ${user.address}`);
                 }
-                // TODO: send enableFallback Txn for Safe
-                const ethAdapter = new EthersAdapter({
-                    "ethers": ethers,
-                    "signerOrProvider": signer
-                });
-                const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
-                //const safeTransaction = safeSDK.createEnableFallbackHandlerTx(process.env.FALLBACK_HANDLER_ADDR);
-                //const signedSafeTransaction = await safeSDK.signTransaction(safeTransaction);
-                //console.log("signedSafeTransaction", JSON.stringify(signedSafeTransaction));
-                //const executeTxResponse = await safeSDK.executeTransaction(signedSafeTransaction);
-                //console.log("executeTxResponse", JSON.stringify(executeTxResponse));
-
-                // approve txn data. TODO: fill in contracts for $AIrt and $WETH
-                const approveABI = ["function approve(address spender, uint256 amount)"];
-                const data = ""; // TODO: finish this later
-                const approveTransactionData = [
-                    {
-                        "to": process.env.AIRTIST_ADDR,
-                        "data": data,
-                        "value": 0
-                    },
-                    {
-                        "to": process.env.AIRTIST_ADDR,
-                        "data": data,
-                        "value": 0
-                    }
-                ];
-                // TODO: rest of approval steps: create, sign, execute
-
                 // update user doc
                 await userDoc.ref.update({
-                    "safeDeployed": true
+                    "safeDeployed": true,
                 });
+                doApprovalsNow = true;
             } // if safe deployed
 
-            // relay the mint
-            const abi = ["function safeMint(address to)"];
-            // Generate the target payload
-            const contract = new ethers.Contract(process.env.AIRTIST_ADDR, abi, signer);
-            console.log("user.safeAddres", user.safeAddress);
-            const { data } = await contract.populateTransaction.safeMint(user.safeAddress);
-            console.log(data);
-            const network = await provider.getNetwork();
-            const request = {
-                "chainId": network.chainId,
-                "target": process.env.AIRTIST_ADDR,
-                "data": data,
-                "user": await signer.getAddress()
-            };
-            console.log("request", request);
-            const relayResponse = await relay.sponsoredCallERC2771(
-                request,
-                signer,
-                process.env.GELATO_API_KEY
-            );
-            if ("taskId" in relayResponse) {
+            if (doApprovalsNow) {
+                // TODO: actually check contract for current allowance?
+                await doApprovals(user.safeAddress, nftAddress);
+                // update user doc
                 await userDoc.ref.update({
-                    "mintTaskId": relayResponse.taskId
+                    "needApprovals": false
                 });
-            } else {
-                console.log("error: relay error", JSON.stringify(relayResponse));
             }
+
+            const network = await provider.getNetwork();
+            const abi = [
+                "function selfMint(address to)",
+                "function publicMint(address creator, address to, uint256 amount, address currency)"
+            ];
+            const nft = new ethers.Contract(nftAddress, abi, signer);
+            console.log("user.safeAddress", user.safeAddress);
+            if (firstMint) {
+                //const utils = require("@safe-global/relay-kit/utils");
+                //utils.getUserNonce()
+                const nonce = await getGelatoNonce(await signer.getAddress());
+                console.log("nonce", nonce);
+                // 1. relay mint for FREE
+                // Generate the target payload
+                const mintTxn = await nft.populateTransaction.publicMint(user.safeAddress, user.safeAddress, "0", process.env.PAINT_ADDR);
+                console.log(mintTxn.data);
+                const request = {
+                    "chainId": network.chainId,
+                    "target": nftAddress,
+                    "data": mintTxn.data,
+                    "user": await signer.getAddress()
+                };
+                console.log("request", request);
+                const relayResponse = await relay.sponsoredCallERC2771(
+                    request,
+                    signer,
+                    process.env.GELATO_API_KEY
+                );
+                console.log(relayResponse, JSON.stringify(relayResponse));
+                if ("taskId" in relayResponse) {
+                    await postDoc.ref.update({
+                        "mintStatus": "pending",
+                        "mintTaskId": relayResponse.taskId,
+                        "nftContract": nftAddress.toLowerCase()
+                    });
+                    const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
+                        "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                        "link": `https://airtist.xyz/p/${post.id}`,
+                        "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                        "text": `Minting has started for `,
+                        "textLink": post.title ? post.title : "this post"
+                    });
+                } else {
+                    console.log("error: relay error", JSON.stringify(relayResponse));
+                }
+
+                // 2. drop 4 pAINnt and start stream of 3 monthly
+                
+                // stream txn
+                const streamABI = ["function stream(address to, int96 flowRate, uint256 amount)"];
+                const streamer = new ethers.Contract(process.env.PAINT_STREAMER, streamABI, signer);
+                const flowRate = THREE_PER_MONTH;
+                const drop = "4000000000000000000"; // 4 to start (actually 5 but we deduct one for the firstMint)
+                const streamTxn = await streamer.populateTransaction.stream(user.safeAddress, flowRate, drop);
+                console.log("streamData", streamTxn.data);
+                const streamRequest = {
+                    "chainId": network.chainId,
+                    "target": process.env.PAINT_STREAMER,
+                    "data": streamTxn.data,
+                    "user": await signer.getAddress(),
+                    "userNonce": parseInt(nonce) + 1
+                };
+                console.log("request", streamRequest);
+                const streamRelayResponse = await relay.sponsoredCallERC2771(
+                    streamRequest,
+                    signer,
+                    process.env.GELATO_API_KEY
+                );
+                console.log(streamRelayResponse, JSON.stringify(streamRelayResponse));
+            } else {
+                // relay the mint
+                // Generate the target payload
+                const mintTxn = await nft.populateTransaction.selfMint(user.safeAddress);
+                console.log(mintTxn.data);
+                const request = {
+                    "chainId": network.chainId,
+                    "target": nftAddress,
+                    "data": mintTxn.data,
+                    "user": await signer.getAddress()
+                };
+                console.log("request", request);
+                const relayResponse = await relay.sponsoredCallERC2771(
+                    request,
+                    signer,
+                    process.env.GELATO_API_KEY
+                );
+                console.log(relayResponse, JSON.stringify(relayResponse));
+                if ("taskId" in relayResponse) {
+                    await postDoc.ref.update({
+                        "mintStatus": "pending",
+                        "mintTaskId": relayResponse.taskId,
+                        "nftContract": nftAddress.toLowerCase()
+                    });
+                } else {
+                    console.log("error: relay error", JSON.stringify(relayResponse));
+                }
+            } // if firstMint
         } else {
             console.log("user not found for " + post.user);
         } // if user
     }
     return;
 } // newPost
+
+module.exports.newLike = async function(likeDoc, context) {
+    const like = likeDoc.data();
+    const postDoc = await db.collection('posts').doc(context.params.postId).get();
+    const post = postDoc.data();
+    const image = like.profileImage ? like.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${like.user}/image`;
+    const likeNotification = await db.collection('users').doc(post.user).collection('notifications').add({
+        "image": image,
+        "link": `https://airtist.xyz/p/${postDoc.id}`,
+        "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+        "name": like.name ? like.name : abbrAddress(like.user),
+        "text": ` liked your post `,
+        "textLink": post.title ? post.title : ""
+    });
+} // newLike
+
+module.exports.newComment = async function(commentDoc, context) {
+    const comment = commentDoc.data();
+    const postDoc = await db.collection('posts').doc(context.params.postId).get();
+    const post = postDoc.data();
+    const image = comment.profileImage ? comment.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${comment.user}/image`;
+    const commentNotification = await db.collection('users').doc(post.user).collection('notifications').add({
+        "image": image,
+        "link": `https://airtist.xyz/p/${postDoc.id}`,
+        "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+        "name": comment.name ? comment.name : abbrAddress(comment.user),
+        "text": ` commented on your post `,
+        "textLink": post.title ? post.title : ""
+    });
+} // newLike
+
+module.exports.newRepost = async function(repostDoc, context) {
+    const repost = repostDoc.data();
+    const postDoc = await db.collection('posts').doc(context.params.postId).get();
+    const post = postDoc.data();
+    const image = repost.profileImage ? repost.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${repost.user}/image`;
+    const repostNotification = await db.collection('users').doc(post.user).collection('notifications').add({
+        "image": image,
+        "link": `https://airtist.xyz/p/${repost.postId}`,
+        "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+        "name": repost.name ? repost.name : abbrAddress(repost.user),
+        "text": ` reposted your post `,
+        "textLink": post.title ? post.title : ""
+    });
+} // newLike
+
+
+module.exports.updateUser = async function(change, context) {
+    const userBefore = change.before.data();
+    const userAfter = change.after.data();
+    if (userAfter.needApprovals) {
+        // new contract get approvals
+        if (userAfter.safeDeployed) {
+            const nftAddress = userAfter.nftContract ? userAfter.nftContract : process.env.AIRTIST_ADDR;
+            const resp = await doApprovals(userAfter.safeAddress, nftAddress);
+            await change.after.ref.update({
+                "needApprovals": false
+            });
+        }
+    }
+    return;
+} // updateUser
+
+module.exports.cronMint = async function(context) {
+    console.log('This will be run every 1 minutes!');
+    // 1. check mintTasks
+    db.collection("posts").where("mintStatus", "==", "pending")
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach(async (doc) => {
+                const post = doc.data();
+                post.id = doc.id;
+                console.log("post", doc.id, JSON.stringify(post));
+                if ("mintTaskId" in post) {
+                    const task = await relay.getTaskStatus(post.mintTaskId);
+                    console.log("mintTask status", JSON.stringify(task));
+                    if (task.taskState == "ExecSuccess") {
+                        if ("transactionHash" in task) {
+                            const tx = await provider.getTransactionReceipt(task.transactionHash);
+                            console.log("tx", JSON.stringify(tx));
+                            const nft = new ethers.Contract(post.nftContract, nftJSON.abi, provider);
+                            for (let i = 0; i < tx.logs.length; i++) {
+                                const log = tx.logs[i];
+                                if (log.address.toLowerCase() == post.nftContract.toLowerCase()) {
+                                    const event = nft.interface.parseLog(log);
+                                    console.log("event", JSON.stringify(event));
+                                    if (event.name == "Transfer") {
+                                        console.log("event.args.tokenId", event.args.tokenId);
+                                        post.tokenId = parseInt(event.args.tokenId);
+                                        await doc.ref.update({
+                                            "mintStatus": "minted",
+                                            "minted": true,
+                                            "tokenId": parseInt(event.args.tokenId)
+                                        });
+                                        var notifyCreator = true;
+                                        if ("minterAddress" in post) {
+                                            const minterNotification = await db.collection('users').doc(post.minterAddress.toLowerCase()).collection('notifications').add({
+                                                "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                                                "link": `https://testnets.opensea.io/assets/goerli/${post.nftContract}/${post.tokenId}`,
+                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                                "text": `Minting has completed. `,
+                                                "textLink": "View on Opensea"
+                                            });
+                                            if (post.minterAddress.toLowerCase() == post.user.toLowerCase()) {
+                                                notifyCreator = false;
+                                            }
+                                        }
+                                        if (notifyCreator) {
+                                            const creatorNotification = await db.collection('users').doc(post.user).collection('notifications').add({
+                                                "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                                                "link": `https://testnets.opensea.io/assets/goerli/${post.nftContract}/${post.tokenId}`,
+                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                                "text": `Your post has been minted. `,
+                                                "textLink": "View on Opensea"
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            });
+        });
+
+} // cronMint
+
+module.exports.cronDeploy = async function(context) {
+    console.log('This will be run every 2 minutes!');
+    // 1. check deployTasks
+    db.collection("users").where("deployStatus", "==", "pending")
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach(async (doc) => {
+                const user = doc.data();
+                console.log("user", doc.id, JSON.stringify(user));
+                if ("deployTaskId" in user) {
+                    const task = await relay.getTaskStatus(user.deployTaskId);
+                    console.log("deployTask status", JSON.stringify(task));
+                    if (task.taskState == "ExecSuccess") {
+                        if ("transactionHash" in task) {
+                            const tx = await provider.getTransactionReceipt(task.transactionHash);
+                            console.log("tx", JSON.stringify(tx));
+                            const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, factoryJSON.abi, provider);
+                            for (let i = 0; i < tx.logs.length; i++) {
+                                const log = tx.logs[i];
+                                if (log.address.toLowerCase() == process.env.AIRTIST_FACTORY.toLowerCase()) {
+                                    const event = factory.interface.parseLog(log);
+                                    console.log("event", JSON.stringify(event));
+                                    if (event.name == "AIrtNFTCreated") {
+                                        console.log("event.args.nftContract", event.args.nftContract);
+                                        await doc.ref.update({
+                                            "nftContract": event.args.nftContract.toLowerCase(),
+                                            "deployStatus": "deployed",
+                                            "needApprovals": true
+                                        });
+                                        // TODO: notification?
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            });
+        });
+
+} // cronDeploy
+
+
+
 
 //export async function api(req, res) {
 module.exports.apiOld = async function(req,res) {

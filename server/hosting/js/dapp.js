@@ -12,7 +12,7 @@ const firebaseConfig = {
   };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts;
+var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts, notificationCount;
 var posts = {};
 var users = {};
 var loggedInUser;
@@ -22,6 +22,7 @@ var currencies = {
     "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A": "pAInt",
     "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6": "WETH"
 };
+const stripePaymentLink = "https://buy.stripe.com/test_aEU5nc7Fr5eBcIo3cc?client_reference_id=";
 
 const path = window.location.pathname.split('/');
 var currentPage = "feed";
@@ -39,7 +40,10 @@ if (path[2]) {
 let web3auth = null;
 let provider = null;
 
-const simpleBar = new SimpleBar(document.getElementById('notifications'));
+var simpleBar;
+if ( document.getElementById("notifications") ) {
+    simpleBar = new SimpleBar(document.getElementById('notifications'));
+}
 
 (async function init() {
     $(".btn-logged-in").hide();
@@ -152,21 +156,39 @@ async function loadUserProfile () {
                                     n.new = false;
                                     $( "#notification-" + n.id ).replaceWith( getNotificationHTML(n) );
                                 }
-                                simpleBar.recalculate();
-                                const count = $("#notifications").find("li.notification.new").length;
-                                if (count > 0) {
-                                    $("#notification-count").text(count).show();
-                                } else {
-                                    $("#notification-count").text(count).hide();
+                                if (simpleBar) {
+                                    simpleBar.recalculate();
                                 }
+                                notificationCount = $("#notifications").find("li.notification.new").length;
+                                if (notificationCount > 0) {
+                                    $("#notification-count").text(notificationCount).show();
+                                } else {
+                                    $("#notification-count").text(notificationCount).hide();
+                                }
+                                //updateBalances();
                             });
                         });
+
+                    doc.ref.collection("wallet").doc("balances")
+                        .onSnapshot((doc) => {
+                            if (doc.exists) {
+                                balances = doc.data();
+                                const paintBalance = parseFloat(ethers.utils.formatEther(balances.pAInt));
+                                const wethBalance = parseFloat(ethers.utils.formatEther(balances.WETH));
+                                $("#paint-balance").text(paintBalance.toFixed(0));
+                                $("#wallet .paint").text(paintBalance.toFixed(3));
+                                $("#wallet .weth").text(wethBalance.toFixed(3));
+                            }
+                        });
+
                 });
             });
     } // if "address"
-    if ("safeAddress" in user) {
+    if (user.safeDeployed) {
         $(".wallet-link").attr("href", `https://app.safe.global/balances?safe=gor:${user.safeAddress}`);
         updateBalances();
+    } else {
+        $("#paint-balance").text(5);
     }
     updateFollowButtons();
 }
@@ -179,11 +201,6 @@ async function updateBalances() {
     });
     var userWithBalances = await resBalances.json();
     balances = userWithBalances.balances;
-    const paintBalance = parseFloat(ethers.utils.formatEther(balances.pAInt));
-    const wethBalance = parseFloat(ethers.utils.formatEther(balances.WETH));
-    $("#paint-balance").text(paintBalance.toFixed(0));
-    $("#wallet .paint").text(paintBalance.toFixed(3));
-    $("#wallet .weth").text(wethBalance.toFixed(3));
 }
 
 async function loadProfile (address) {
@@ -487,7 +504,13 @@ async function upgrade(data) {
     });
     var result = await res.json();
     uiConsole(result);
-    $("#upgrade").text("Upgraded!");
+    if (result.result == "ok") {
+        if (loggedInUser && ("address" in loggedInUser)) {
+            window.location = stripePaymentLink + loggedInUser.address;
+        } else {
+            console.log("cannot send payment link without address for loggedInUser");
+        }
+    }
 }
 
 async function postModal(data) {
@@ -533,8 +556,10 @@ function updateFollowButtons() {
         });
         $(".nomint").each(function(){
             var creator = $(this).data("user");
-            if (loggedInUser.address.toLowerCase() == creator.toLowerCase()) {
-                $(this).show();
+            if ("address" in loggedInUser) {
+                if (loggedInUser.address.toLowerCase() == creator.toLowerCase()) {
+                    $(this).show();
+                }
             }
         });
     }    
@@ -570,6 +595,11 @@ function navigateTo(currentPage, idForPage) {
         $(".menu").removeClass("active");
         $(".menu-settings").addClass("active");
         history.pushState({}, "", "/settings/");
+    } else if (currentPage == "p") {
+        if (idForPage) {
+            loadIndie(idForPage);
+            history.pushState({}, "", `/p/${idForPage}`);
+        }
     }
 }
 
@@ -760,13 +790,25 @@ $( document ).ready(function() {
         return false;
     });
 
-    $("#upgrade").click(async function(){
+    $(".upgrade-page").click(function(){
+        window.location(`/upgrade/`);
+        return false;
+    });
+
+    $("#upgrade, .upgrade").click(async function(){
         console.log("upgrade!");
-        $(this).text("Upgrading...");
         var data = {};
-        data.name = "My Art NFTs";
-        data.symbol = "MyArt";
-        upgrade(data);
+        data.name = $("#contract-name").val();
+        data.symbol = $("#contract-symbol").val();
+        if (data.name && data.symbol) {
+            $(this).text("Upgrading...");
+            upgrade(data);
+        } else {
+            $(".upgrade-main").hide();
+            $(".upgrade-form").show();
+            $("#contract-name").focus();
+            $("#upgrade-form-button").text("UPGRADE NOW");
+        }
         return false;
     });
 
@@ -940,7 +982,7 @@ function getFeedPostHTML(data) {
     if ("mintStatus" in data) {
         if (data.mintStatus == "pending") {
             mintHTML = `
-            <a href="#" data-id="${data.id}" class="nomint flex items-center space-x-2 flex-1 justify-end">
+            <a href="#" data-id="${data.id}" data-user="${data.user}" class="nomint flex items-center space-x-2 flex-1 justify-end">
                 <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Minting...</div>
             </a>
             `;
@@ -1408,6 +1450,7 @@ function getNotificationHTML(data) {
     var name = data.name ? data.name : "";
     var textLink = data.textLink ? data.textLink : ""; 
     var newOne = data.new ? "new" : "";
+    newOne = "new";
     var timeago =  moment.unix(data.timestamp.seconds - 30).fromNow();
     html = `
     <li id="notification-${data.id}" class="notification ${newOne}">
@@ -1424,6 +1467,16 @@ function getNotificationHTML(data) {
     </li>
     `;
     return html;
+}
+
+function getLoadMoreHTML(data) {
+    return `
+    <div class="flex justify-center mt-6" id="toggle" hidden>
+        <a href="/"
+            class="bg-white dark:bg-gray-900 font-semibold my-3 px-6 py-2 rounded-full shadow-md dark:bg-gray-800 dark:text-white">
+            Load more ..</a>
+    </div>
+    `;
 }
 
 function openseaIcon() {

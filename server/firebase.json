@@ -46,6 +46,10 @@
       {
         "source": "/p/*",
         "destination": "/index.html"
+      },
+      {
+        "source": "/upgrade/",
+        "destination": "/upgrade.html"
       }
     ],
     "ignore": [

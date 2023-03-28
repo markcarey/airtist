@@ -11,7 +11,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const addr = {};
 addr.pAInt = process.env.PAINT_ADDR;
-console.log("process.env.AIRTIST_ADDR", process.env.AIRTIST_ADDR);
+
 addr.nft = process.env.AIRTIST_ADDR;
 addr.streamer = process.env.PAINT_STREAMER;
 

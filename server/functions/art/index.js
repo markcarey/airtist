@@ -210,16 +210,45 @@ async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
     });
 }
 
-async function getBalances(address) {
+async function updateStream(safeAddress, flowRate, drop) {
+    return new Promise(async (resolve, reject) => {
+        const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+        const network = await provider.getNetwork();
+        // stream txn
+        const streamABI = ["function stream(address to, int96 flowRate, uint256 amount)"];
+        const streamer = new ethers.Contract(process.env.PAINT_STREAMER, streamABI, signer);
+        const streamTxn = await streamer.populateTransaction.stream(safeAddress, flowRate, drop);
+        console.log("streamData", streamTxn.data);
+        const streamRequest = {
+            "chainId": network.chainId,
+            "target": process.env.PAINT_STREAMER,
+            "data": streamTxn.data,
+            "user": await signer.getAddress()
+        };
+        console.log("request", streamRequest);
+        const streamRelayResponse = await relay.sponsoredCallERC2771(
+            streamRequest,
+            signer,
+            process.env.GELATO_API_KEY
+        );
+        console.log(streamRelayResponse, JSON.stringify(streamRelayResponse));
+        resolve(relayResponse);
+    });
+}
+
+async function getBalances(user) {
     return new Promise(async (resolve, reject) => {
         var balances = {};
         const balanceAbi = ["function balanceOf(address owner) view returns (uint256)"];
         const pAInt = new ethers.Contract(process.env.PAINT_ADDR, balanceAbi, provider);
         const weth = new ethers.Contract(process.env.GOERLI_WETH, balanceAbi, provider);
-        balances["pAInt"] = await pAInt.balanceOf(address);
-        balances[process.env.PAINT_ADDR] = balances["pAInt"]
-        balances["WETH"] = await weth.balanceOf(address);
-        balances[process.env.GOERLI_WETH] = balances["WETH"]
+        const paintBal = await pAInt.balanceOf(user.safeAddress);
+        const wethBal = await weth.balanceOf(user.safeAddress);
+        balances["pAInt"] = paintBal.toString();
+        balances[process.env.PAINT_ADDR] = paintBal.toString();
+        balances["WETH"] = wethBal.toString();
+        balances[process.env.GOERLI_WETH] = wethBal.toString();
+        await db.collection('users').doc(user.address).collection("wallet").doc("balances").set(balances);
         resolve(balances);
     });
 }
@@ -501,7 +530,7 @@ api.get("/api/balances", getAuth, async function (req, res) {
     // logged in user profile + balances
     console.log("req.user", JSON.stringify(req.user));
     const user = req.user;
-    const balances = await getBalances(user.safeAddress);
+    const balances = await getBalances(user);
     user.balances = balances;
     var cache = 'public, max-age=120, s-maxage=240';
     cache = 'public, max-age=60, s-maxage=120'; // TODO: adjust or remove this!!
@@ -626,31 +655,87 @@ api.post("/api/mint", getAuth, async function (req, res) {
 api.post("/api/upgrade", getAuth, async function (req, res) {
     var name = req.q.name;
     var symbol = req.q.symbol;
-    // TODO: 1. stripe subscription stuff goes here !!
 
-    // 2. User has upgraded, deploy contract via Gelato Relay
-    const relayResponse = await deployNFTContractAndUpdateStream(name, symbol, req.user.safeAddress);
-    if ("taskId" in relayResponse) {
-        await db.collection('users').doc(req.user.address).update({
-            "plan": "pro",
-            "deployStatus": "pending",
-            "deployTaskId": relayResponse.taskId,
-            "nftContractName": name,
-            "nftContractSymbol": symbol
-        });
-        return res.json({
-            "result": "ok",
-            "message": "Collection deployment is underway",
-            "relay": relayResponse
-        });
-    } else {
-        console.log("error: relay error", JSON.stringify(relayResponse));
-        return res.json({
-            "result": "error",
-            "error": relayResponse
-        });
-    }
+    // User wants to upgrade, save name & symbol but actual upgrade will be triggered via Stripe webhook
+    await db.collection('users').doc(req.user.address).update({
+        "nftContractName": name,
+        "nftContractSymbol": symbol
+    });
+    return res.json({
+        "result": "ok",
+        "message": "NFT contract name and symbol saved"
+    });
 });
+
+api.post("/api/stripe", async function (req, res) {
+    console.log(JSON.stringify(req.body));
+    var wh = req.body;
+
+    if (wh.type == "checkout.session.completed") {
+        // subscription started
+        const checkout = wh.data.object;
+        const address = checkout.client_reference_id;
+        const customerId = checkout.customer;
+        const paymentLink = checkout.payment_link;
+        if (paymentLink == "plink_1MqcWILgthn7o9uIwyolpeH1") {
+            // get user
+            const userDoc = await db.collection('users').doc(address).get();
+            if (userDoc.exists) {
+                var user = userDoc.data();
+                var update = true;
+                if (user.plan == "pro") {
+                    // already on pro
+                    update = false;
+                    if (user.stripeCustomer != customerId) {
+                        // but need customer id
+                        update = true;
+                    }
+                }
+                if (update) {
+                    await userDoc.ref.update({
+                        "stripeCustomer": customerId,
+                        "plan": "pro"
+                    });
+                    await userDoc.ref.collection('notifications').add({
+                        "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
+                        "link": `https://airtist.xyz/`,
+                        "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                        "name": "",
+                        "text": `Upgrade to PRO plan is underway`,
+                        "textLink": ""
+                    });
+                }
+                return res.status(200).end();
+            } else {
+                console.log('no user found for ' + address);
+                return res.status(200).end();
+            }
+        }
+    } else if (wh.type == "customer.subscription.deleted") {
+        // subscription ended
+        const subscription = wh.data.object;
+        const customerId = subscription.customer;
+        // get matching user
+        const userDoc = await db.collection('users').where("stripeCustomer", "==", customerId)
+            .get()
+            .then((querySnapshot) => {
+                var count = 0;
+                querySnapshot.forEach(async (userDoc) => {
+                    count++;
+                    await userDoc.ref.update({
+                        "plan": "free"
+                    });
+                });
+                if (count > 1) {
+                    console.log("more than one user matched Stripe customerId " + customerId);
+                }
+                return res.status(200).end();
+            });
+    } else {
+        // TODO: other events?
+        return res.status(200).end();
+    }
+}); // /api/stripe
 
 api.get('/images/:id.png', async function (req, res) {
     console.log("start /images/ with path", req.path);
@@ -1003,7 +1088,6 @@ module.exports.newRepost = async function(repostDoc, context) {
     });
 } // newLike
 
-
 module.exports.updateUser = async function(change, context) {
     const userBefore = change.before.data();
     const userAfter = change.after.data();
@@ -1015,6 +1099,43 @@ module.exports.updateUser = async function(change, context) {
             await change.after.ref.update({
                 "needApprovals": false
             });
+        }
+    }
+    if (userBefore.plan != userAfter.plan) {
+        if (userAfter.plan == "pro") {
+            // upgrade to pro
+            var name = userAfter.nftContractName;
+            var symbol = userAfter.nftContractSymbol;
+            if (name && symbol) {
+                const relayResponse = await deployNFTContractAndUpdateStream(name, symbol, userAfter.safeAddress);
+                if ("taskId" in relayResponse) {
+                    await change.after.ref.update({
+                        "deployStatus": "pending",
+                        "deployTaskId": relayResponse.taskId
+                    });
+                } else {
+                    console.log("error: relay error", JSON.stringify(relayResponse));
+                }
+            } else {
+                console.log("ERROR: trying to upgrade to pro without name & symbol", JSON.stringify(userAfter));
+            }
+        } else {
+            // downgrade to free
+            // 1. contract remains deployed (obvs), but flip user backed to shared contract
+            await change.after.ref.update({
+                "nftContractPro": userAfter.nftContract,
+                "nftContract": process.env.AIRTIST_ADDR
+            });
+            await change.after.ref.collection('notifications').add({
+                "image": userAfter.profileImage ? userAfter.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${userAfter.address}/image`,
+                "link": `https://airtist.xyz/`,
+                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                "name": "",
+                "text": `Your PRO plan has been cancelled`,
+                "textLink": ""
+            });
+            // 2. reduce pAInt stream to 3 per month
+            const relayResponse = await updateStream(userAfter.safeAddress, THREE_PER_MONTH, 0);
         }
     }
     return;
@@ -1073,6 +1194,14 @@ module.exports.cronMint = async function(context) {
                                                 "textLink": "View on Opensea"
                                             });
                                         }
+                                        const creatorDoc = await db.collection('users').doc(post.user).get();
+                                        const minterDoc = await db.collection('users').doc(post.minterAddress).get();
+                                        if (creatorDoc.exists) {
+                                            await getBalances(creatorDoc.data());
+                                        }
+                                        if (minterDoc.exists) {
+                                            await getBalances(minterDoc.data());
+                                        }
                                     }
                                 }
                             }
@@ -1114,7 +1243,15 @@ module.exports.cronDeploy = async function(context) {
                                             "deployStatus": "deployed",
                                             "needApprovals": true
                                         });
-                                        // TODO: notification?
+                                        await doc.ref.collection('notifications').add({
+                                            "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
+                                            "link": `https://airtist.xyz/`,
+                                            "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                            "name": "",
+                                            "text": `Upgrade to PRO plan is complete`,
+                                            "textLink": ""
+                                        });
+                                        await getBalances(user);
                                     }
                                 }
                             }

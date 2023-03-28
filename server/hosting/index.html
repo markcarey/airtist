@@ -131,7 +131,7 @@
                     <div class="left-side">
                         <!-- Logo -->
                         <div id="logo" class=" uk-hidden@s">
-                            <a href="home.html">
+                            <a href="/">
                                 <img src="/assets/images/logo-mobile.png" alt="">
                                 <img src="/assets/images/logo-mobile-light.png" class="logo_inverse">
                             </a>
@@ -172,7 +172,7 @@
                         </a>
 
                         <!-- pAInt Tokens -->
-                        <a href="#" class="header-links-item" aria-expanded="false">
+                        <a href="#" class="wallet-link header-links-item" target="_blank" aria-expanded="false">
                           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64; width: 32px; height: 32px;" xml:space="preserve">
                             <style type="text/css">
                               .st0{fill:#76C2AF;}
@@ -198,83 +198,20 @@
                         
                          <!-- Notification -->
 
-                        <a href="#" class="header-links-item">
+                        <a href="#" class="notification-header header-links-item">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                         </a>
-                        <span id="unread-notifications" class="nav-badge">0</span>
-                        <div uk-drop="mode: click;offset: 4" class="header_dropdown">
+                        <span id="notification-count" class="nav-badge" style="display:none;">0</span>
+                        <div id="notification-drop" uk-drop="target: !.notification-header;mode: click;offset: 4" class="header_dropdown">
                             <h4
                                 class="-mt-5 -mx-5 bg-gradient-to-t from-gray-100 to-gray-50 border-b font-bold px-6 py-3">
                                 Notification </h4>
-                            <ul class="dropdown_scrollbar" data-simplebar>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-1.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <p> <strong>Adrian Mohani</strong>  Lorem ipsum dolor cursus
-                                                <span class="text-link"> Adipiscing massa convallis  </span>
-                                            </p>
-                                            <span class="time-ago"> 2 hours ago </span>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-2.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <p>
-                                                <strong>Stella Johnson</strong> Nonummy nibh euismod
-                                                <span class="text-link"> Imperdiet doming </span>
-                                            </p>
-                                            <span class="time-ago"> 9 hours ago </span>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-3.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <p>
-                                                <strong>Alex Dolgove</strong>  Lorem ipsum dolor cursus
-                                                <span class="text-link"> Adipiscing massa convallis  </span>
-                                            </p>
-                                            <span class="time-ago"> 12 hours ago </span>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-1.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <p>
-                                                <strong>Stella Johnson</strong> Nonummy nibh euismod
-                                                <span class="text-link"> Imperdiet doming </span>
-                                            </p>
-                                            <span class="time-ago"> Yesterday </span>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="#">
-                                        <div class="drop_avatar"> <img src="/assets/images/avatars/avatar-3.jpg" alt="">
-                                        </div>
-                                        <div class="drop_content">
-                                            <p>
-                                                <strong>Alex Dolgove</strong>  Lorem ipsum dolor cursus
-                                                <span class="text-link"> Adipiscing massa convallis  </span>
-                                            </p>
-                                            <span class="time-ago"> 12 hours ago </span>
-                                        </div>
-                                    </a>
-                                </li>
+                            <ul id="notifications" class="dropdown_scrollbar" data-simplebarDisabled>
+
                             </ul>
                             <a href="#" class="see-all">See all</a>
                         </div>
@@ -354,7 +291,7 @@
 
                       </div>
 
-                      <div class="mt-5" uk-sticky="offset:28; bottom:true ; media @m">
+                      <div class="mt-5" uk-stickyX="offset:28; bottom:true ; media @m">
                           <div class="bg-white dark:bg-gray-900 shadow-md rounded-md overflow-hidden">
 
                               <div class="bg-gray-50 border-b border-gray-100 flex items-baseline justify-between py-4 px-6 dark:bg-gray-800 dark:border-gray-700">
@@ -453,6 +390,7 @@
                  <div class="bg-gray-10 p-6 pt-0 flex justify-end space-x-3">
                      <button class="p-2 px-4 rounded bg-gray-50 text-red-500"> Cancel </button>
                      <button id="save-profile" type="button" class="button bg-blue-700"> Save </button>
+                     <button id="upgrade" type="button" class="button bg-blue-700"> Upgrade </button>
                  </div>
 
               </div>
@@ -578,15 +516,15 @@
             <div class="col-span-2">
                 <label class="mb-0"> Type </label>
                 <select name="type" id="type" class="bg-gray-100 dark:bg-gray-600 shadow-none border w-full px-3 py-2 rounded-md focus:border-blue-600 outline-none mt-2">
-                    <option value="2"> Art </option>
-                    <option value="3"> Photo </option>
+                    <option value="Art"> Art </option>
+                    <option value="Photo"> Photo </option>
                 </select>
             </div>
             <div> 
                 <div>
                    <label class="mb-0"> Token </label>
                    <select name="currency" id="currency" class="bg-gray-100 dark:bg-gray-600 shadow-none border w-full px-3 py-2 rounded-md focus:border-blue-600 outline-none mt-2">
-                     <option value="0">AIrt</option>
+                     <option value="0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A">AIrt</option>
                      <option value="0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6">WETH</option>
                    </select>
                 </div>
@@ -688,7 +626,9 @@
     <script type="module" src="https://unpkg.com/ionicons@5.2.3/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule="" src="https://unpkg.com/ionicons@5.2.3/dist/ionicons/ionicons.js"></script>
 
-    <script src="/js/dapp.js?v=120"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <script src="/js/dapp.js?v=161"></script>
 
 </body>
 

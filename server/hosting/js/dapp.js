@@ -16,6 +16,12 @@ var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts;
 var posts = {};
 var users = {};
 var loggedInUser;
+var balances = {};
+
+var currencies = {
+    "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A": "pAInt",
+    "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6": "WETH"
+};
 
 const path = window.location.pathname.split('/');
 var currentPage = "feed";
@@ -32,6 +38,8 @@ if (path[2]) {
 
 let web3auth = null;
 let provider = null;
+
+const simpleBar = new SimpleBar(document.getElementById('notifications'));
 
 (async function init() {
     $(".btn-logged-in").hide();
@@ -129,10 +137,53 @@ async function loadUserProfile () {
                             }
                         }
                     }
+
+                    
+                    doc.ref.collection("notifications").orderBy("timestamp", "asc")
+                        .onSnapshot((querySnapshot) => {
+                            querySnapshot.forEach((notification) => {
+                                console.log("notification", JSON.stringify(notification.data()));
+                                var n = notification.data();
+                                n.id = notification.id;
+                                if ( $( "#notification-" + n.id ).length <= 0 ) {
+                                    n.new = true;
+                                    $(`#notifications`).find(".simplebar-content").prepend( getNotificationHTML(n) );
+                                } else {
+                                    n.new = false;
+                                    $( "#notification-" + n.id ).replaceWith( getNotificationHTML(n) );
+                                }
+                                simpleBar.recalculate();
+                                const count = $("#notifications").find("li.notification.new").length;
+                                if (count > 0) {
+                                    $("#notification-count").text(count).show();
+                                } else {
+                                    $("#notification-count").text(count).hide();
+                                }
+                            });
+                        });
                 });
             });
     } // if "address"
+    if ("safeAddress" in user) {
+        $(".wallet-link").attr("href", `https://app.safe.global/balances?safe=gor:${user.safeAddress}`);
+        updateBalances();
+    }
     updateFollowButtons();
+}
+
+async function updateBalances() {
+    const headers = await getHeaders();
+    const resBalances = await fetch('/api/balances', { 
+        method: 'GET', 
+        headers: new Headers(headers)
+    });
+    var userWithBalances = await resBalances.json();
+    balances = userWithBalances.balances;
+    const paintBalance = parseFloat(ethers.utils.formatEther(balances.pAInt));
+    const wethBalance = parseFloat(ethers.utils.formatEther(balances.WETH));
+    $("#paint-balance").text(paintBalance.toFixed(0));
+    $("#wallet .paint").text(paintBalance.toFixed(3));
+    $("#wallet .weth").text(wethBalance.toFixed(3));
 }
 
 async function loadProfile (address) {
@@ -276,6 +327,8 @@ function loadFeed () {
                         $(`#like-summary-${doc.id}`).html(html);
                     });
             });
+            updateFollowButtons();
+            updateBalances();
     });
 }
 
@@ -386,6 +439,30 @@ async function like(data) {
     uiConsole(result);
 }
 
+async function repost(data) {
+    const headers = await getHeaders();
+    const res = await fetch('/api/repost', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    uiConsole(result);
+}
+
+async function mint(data) {
+    const headers = await getHeaders();
+    // TODO: check balances first?
+    const res = await fetch('/api/mint', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    uiConsole(result);
+}
+
+
 async function follow(address) {
     const headers = await getHeaders();
     var data = {
@@ -399,6 +476,18 @@ async function follow(address) {
     var result = await res.json();
     updateFollowButtons();
     uiConsole(result);
+}
+
+async function upgrade(data) {
+    const headers = await getHeaders();
+    const res = await fetch('/api/upgrade', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    uiConsole(result);
+    $("#upgrade").text("Upgraded!");
 }
 
 async function postModal(data) {
@@ -440,6 +529,12 @@ function updateFollowButtons() {
             }
             if (target.toLowerCase() == loggedInUser.address.toLowerCase()) {
                 $(this).prop('disabled', true);
+            }
+        });
+        $(".nomint").each(function(){
+            var creator = $(this).data("user");
+            if (loggedInUser.address.toLowerCase() == creator.toLowerCase()) {
+                $(this).show();
             }
         });
     }    
@@ -550,6 +645,17 @@ $( document ).ready(function() {
         }
     });
 
+    $("#selfmint").change(function(){
+        if ( $(this).is(':checked') ) {
+            $("#mintable").prop("checked", false);
+        }
+    });
+    $("#mintable").change(function(){
+        if ( $(this).is(':checked') ) {
+            $("#selfmint").prop("checked", false);
+        }
+    });
+
     $("#post").click(async function(){
         console.log("post!");
         $(this).text("Posting...");
@@ -617,6 +723,28 @@ $( document ).ready(function() {
         return false;
     });
 
+    $( "#feed-posts, #story-modal" ).on( "click", ".repost", async function(e) {
+        e.preventDefault();
+        console.log("repost!");
+        var data = {};
+        data.parent = $(this).data('id');
+        repost(data);
+        $(this).find('i').css("color", "red");
+        $(this).find('.like-button-text').text(" Reposted");
+        return false;
+    });
+
+    $( "#feed-posts, #story-modal" ).on( "click", ".mint", async function(e) {
+        e.preventDefault();
+        console.log("mint!");
+        var data = {};
+        data.id = $(this).data('id');
+        mint(data);
+        $(this).find('i').css("color", "red");
+        $(this).text(" Minting...");
+        return false;
+    });
+
     $( "#story-modal" ).on( "click", ".comment-button", async function(e) {
         e.preventDefault();
         console.log("comment!");
@@ -629,6 +757,16 @@ $( document ).ready(function() {
         }
         comment(data);
         $(`#modal-comment-text-${data.id}`).val('');
+        return false;
+    });
+
+    $("#upgrade").click(async function(){
+        console.log("upgrade!");
+        $(this).text("Upgrading...");
+        var data = {};
+        data.name = "My Art NFTs";
+        data.symbol = "MyArt";
+        upgrade(data);
         return false;
     });
 
@@ -657,6 +795,12 @@ $( document ).ready(function() {
         } else {
             return true;
         }
+    });
+
+    $(".notification-header, #notification-count").click(function(){
+        UIkit.drop(document.getElementById('notification-drop')).show();
+        $("#notifications").find("li.notification.new").removeClass("new");
+        $("#notification-count").hide();
     });
 
     $(".logout").click(async function (event) {
@@ -761,6 +905,47 @@ function getFeedPostHTML(data) {
     if (!data.profileImage) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
     }
+    var icon = openseaIcon();
+    if (data.currency == "0") {
+        data.currency = "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A";
+    }
+    const coin = data.currency ? data.currency : "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A"; 
+    var mintHTML = `
+    <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint nomint flex items-center space-x-2 flex-1 justify-end" style="display: none;">
+        <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (1 pAInt)</div>
+    </a>
+    `;
+    if (data.minted) {
+        mintHTML = `
+        <a href="https://testnets.opensea.io/assets/goerli/${data.nftContract}/${data.tokenId}" target="_blank" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
+            <div>
+                ${icon}
+            </div>
+        </a>
+        `;
+    } else if (data.mintable) {
+        mintHTML = `
+        <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
+            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (${data.price} ${currencies[coin]})</div>
+        </a>
+        `;
+    } else if (loggedInUser && (loggedInUser.address.toLowerCase() == data.user.toLowerCase())) {
+        // logged in user is creator, so give option to mint for 1 pAInt
+        mintHTML = `
+        <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
+            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (1 pAInt)</div>
+        </a>
+        `;
+    }
+    if ("mintStatus" in data) {
+        if (data.mintStatus == "pending") {
+            mintHTML = `
+            <a href="#" data-id="${data.id}" class="nomint flex items-center space-x-2 flex-1 justify-end">
+                <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Minting...</div>
+            </a>
+            `;
+        }
+    }
     html = `
     <!-- post 1-->
     <div id="post-${data.id}" class="bg-white shadow rounded-md dark:bg-gray-900 -mx-2 lg:mx-0">
@@ -820,9 +1005,10 @@ function getFeedPostHTML(data) {
                 <a href="#comment-text-${data.id}" data-id="${data.id}" class="comment-link flex items-center space-x-2">
                     <div><i class="uil-comment-alt-message mr-1" style="font-size: 130%;"></i>Comment</div>
                 </a>
-                <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
-                    <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint</div>
+                <a href="#" data-id="${data.id}" class="repost flex items-center space-x-2">
+                    <div><i class="uil-refresh mr-1" style="font-size: 130%;"></i>Repost</div>
                 </a>
+                ${mintHTML}
             </div>
 
             <div id="like-summary-${data.id}" class="flex items-center space-x-3"> 
@@ -1125,13 +1311,16 @@ function getModalHTML(data) {
                     
                     <div class="py-4 ">
                         <div class="flex justify-around">
-                            <a href="#" data-id="${data.id}" class="like-button flex items-center space-x-3">
+                            <a href="#" data-id="${data.id}" class="like-button flex items-center space-x-4">
                                 <div class="flex font-bold items-baseline"> <i class="uil-heart mr-1"> </i> <span class="like-button-text">Like</span></div>
                             </a>
-                            <a href="#" data-id="${data.id}" class="comment-link flex items-center space-x-3">
+                            <a href="#" data-id="${data.id}" class="comment-link flex items-center space-x-4">
                                 <div class="flex font-bold items-baseline"> <i class="uil-comment-alt-message mr-1"> </i> Comment</div>
                             </a>
-                            <a href="#" data-id="${data.id}" class="mint flex items-center space-x-3">
+                            <a href="#" data-id="${data.id}" class="repost flex items-center space-x-4">
+                                <div class="flex font-bold items-baseline"> <i class="uil-refresh mr-1"> </i> Repost</div>
+                            </a>
+                            <a href="#" data-id="${data.id}" class="mint flex items-center space-x-4">
                                 <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> Mint</div>
                             </a>
                         </div>
@@ -1202,4 +1391,43 @@ function getSidebarTrendingPostsHTML(data) {
     </div>
     `;
     return html;
+}
+
+function getNotificationHTML(data) {
+    var html = '';
+    var target = "";
+    if ("link" in data) {
+        if ( data.link.includes("airtist") ) {
+            target = "";
+        } else {
+            target = "_blank";
+        }
+    } else {
+        data.link = "#";
+    }
+    var name = data.name ? data.name : "";
+    var textLink = data.textLink ? data.textLink : ""; 
+    var newOne = data.new ? "new" : "";
+    var timeago =  moment.unix(data.timestamp.seconds - 30).fromNow();
+    html = `
+    <li id="notification-${data.id}" class="notification ${newOne}">
+        <a href="${data.link}" target="${target}">
+            <div class="drop_avatar"> <img src="${data.image}" alt="">
+            </div>
+            <div class="drop_content">
+                <p> <strong>${name}</strong>  ${data.text}
+                    <span class="text-link">${textLink}  </span>
+                </p>
+                <span class="time-ago"> ${timeago} </span>
+            </div>
+        </a>
+    </li>
+    `;
+    return html;
+}
+
+function openseaIcon() {
+    return `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;"><path d="M24 12C24 18.6271 18.6271 24 12 24C5.37296 24 0 18.6271 0 12C0 5.37296 5.37296 0 12 0C18.6285 0 24 5.37296 24 12Z" fill="#2081E2"></path><path d="M5.92022 12.4029L5.97199 12.3216L9.09367 7.4381C9.1393 7.36661 9.24655 7.374 9.28106 7.45166C9.80258 8.62044 10.2526 10.074 10.0418 10.979C9.95176 11.3513 9.70519 11.8555 9.42778 12.3216C9.39204 12.3894 9.35258 12.456 9.31066 12.5201C9.29092 12.5497 9.25764 12.5669 9.22188 12.5669H6.01144C5.92514 12.5669 5.8746 12.4732 5.92022 12.4029Z" fill="white"></path><path d="M19.8347 13.3104V14.0834C19.8347 14.1278 19.8075 14.1673 19.7682 14.1845C19.5265 14.2881 18.6992 14.6678 18.3552 15.1462C17.4774 16.368 16.8068 18.115 15.3075 18.115H9.05308C6.83636 18.115 5.04004 16.3126 5.04004 14.0884V14.0169C5.04004 13.9577 5.0881 13.9096 5.1473 13.9096H8.63392C8.70294 13.9096 8.75348 13.9738 8.74734 14.0415C8.72266 14.2684 8.7646 14.5001 8.87185 14.711C9.07897 15.1315 9.50802 15.394 9.97158 15.394H11.6976V14.0464H9.9913C9.90378 14.0464 9.85202 13.9454 9.90256 13.8739C9.92104 13.8455 9.94201 13.8159 9.96418 13.7827C10.1257 13.5533 10.3562 13.1971 10.5856 12.7915C10.7421 12.5177 10.8938 12.2255 11.0158 11.932C11.0406 11.879 11.0602 11.8248 11.0799 11.7718C11.1132 11.6781 11.1478 11.5906 11.1725 11.503C11.1971 11.429 11.2167 11.3513 11.2365 11.2786C11.2945 11.0296 11.3192 10.7658 11.3192 10.4921C11.3192 10.3848 11.3142 10.2726 11.3043 10.1653C11.2994 10.0482 11.2846 9.93108 11.2698 9.81396C11.2599 9.7104 11.2415 9.60806 11.2218 9.50082C11.1971 9.34424 11.1625 9.1889 11.1231 9.0323L11.1095 8.97314C11.0799 8.86586 11.0553 8.76356 11.0208 8.6563C10.9234 8.3197 10.8112 7.99176 10.6928 7.68478C10.6497 7.56272 10.6004 7.4456 10.551 7.32848C10.4783 7.15216 10.4043 6.9919 10.3365 6.84024C10.302 6.7712 10.2724 6.70832 10.2428 6.6442C10.2095 6.57146 10.175 6.49872 10.1405 6.4297C10.1158 6.37668 10.0875 6.32736 10.0677 6.27804L9.85693 5.88844C9.82734 5.83544 9.87666 5.77256 9.9346 5.78858L11.2538 6.14612H11.2575C11.2599 6.14612 11.2611 6.14736 11.2625 6.14736L11.4362 6.19544L11.6274 6.2497L11.6976 6.2694V5.4853C11.6976 5.1068 12.0009 4.7998 12.3757 4.7998C12.5631 4.7998 12.7332 4.87624 12.8553 5.00076C12.9774 5.1253 13.0538 5.29544 13.0538 5.4853V6.64916L13.1943 6.68858C13.2055 6.6923 13.2166 6.69722 13.2264 6.70462C13.261 6.73052 13.3102 6.76872 13.3731 6.8156C13.4225 6.85502 13.4755 6.90312 13.5395 6.95244C13.6666 7.05476 13.8182 7.18668 13.9846 7.33834C14.029 7.37654 14.0722 7.416 14.1116 7.45546C14.3262 7.65518 14.5666 7.88942 14.7959 8.14834C14.8599 8.22108 14.9229 8.29504 14.9869 8.37272C15.0511 8.45162 15.1189 8.5293 15.1781 8.60698C15.2557 8.71054 15.3396 8.8178 15.4124 8.93C15.4469 8.98301 15.4863 9.03724 15.5196 9.09026C15.6133 9.23204 15.6959 9.37876 15.7748 9.52548C15.8081 9.59328 15.8426 9.66724 15.8722 9.74C15.9597 9.93602 16.0287 10.1358 16.0731 10.3355C16.0867 10.3786 16.0966 10.4255 16.1015 10.4674V10.4773C16.1163 10.5364 16.1213 10.5993 16.1262 10.6634C16.1459 10.8681 16.136 11.0727 16.0917 11.2786C16.0731 11.3662 16.0485 11.4488 16.0189 11.5364C15.9894 11.6201 15.9597 11.7076 15.9215 11.7903C15.8475 11.9616 15.7599 12.133 15.6564 12.2933C15.6231 12.3525 15.5837 12.4154 15.5443 12.4745C15.5011 12.5374 15.4567 12.5966 15.4173 12.6545C15.363 12.7285 15.305 12.8062 15.2459 12.8752C15.1929 12.948 15.1387 13.0208 15.0794 13.0848C14.9969 13.1822 14.918 13.2747 14.8353 13.3634C14.786 13.4215 14.733 13.4806 14.6787 13.5336C14.6257 13.5927 14.5715 13.6457 14.5222 13.6951C14.4396 13.7777 14.3706 13.8418 14.3125 13.8948L14.1769 14.0194C14.1573 14.0366 14.1313 14.0464 14.1043 14.0464H13.0538V15.394H14.3755C14.6713 15.394 14.9525 15.2892 15.1794 15.0969C15.2569 15.0291 15.596 14.7357 15.9967 14.2931C16.0103 14.2783 16.0275 14.2671 16.0473 14.2622L19.6978 13.2069C19.7657 13.1871 19.8347 13.2389 19.8347 13.3104Z" fill="white"></path></svg>
+    `;
 }

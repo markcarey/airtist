@@ -525,6 +525,16 @@ api.get("/api/profile/:address", async function (req, res) {
         return res.json({"error": "user not found"});
     }
 });
+api.post("/api/profile", getAuth, async function (req, res) {
+    const data = {
+        "name": req.q.name,
+        "profileImage": req.q.profileImage,
+        "about": req.q.about,
+        "location": req.q.location
+    }
+    await db.collection('users').doc(req.user.address).update(data);
+    return res.json({"result": "ok", "message": "Profile data saved"});
+});
 
 api.get("/api/balances", getAuth, async function (req, res) {
     // logged in user profile + balances
@@ -540,7 +550,7 @@ api.get("/api/balances", getAuth, async function (req, res) {
 
 api.post("/api/mint", getAuth, async function (req, res) {
     const user = req.user;
-    const balances = await getBalances(user.safeAddress);
+    const balances = await getBalances(user);
     var id = req.q.id;
     const docRef = db.collection('posts').doc(id);
     const postDoc = await docRef.get();
@@ -573,7 +583,7 @@ api.post("/api/mint", getAuth, async function (req, res) {
         // 2. Does user have enough balance to mint?
         const priceInWei = ethers.utils.parseUnits(price.toString(), "ether");
         console.log("balance and price", balances[currency], priceInWei);
-        if ( balances[currency].gte(priceInWei) ) {
+        if ( ethers.BigNumber.from(balances[currency]).gte(priceInWei) ) {
             // balance is enough
             // get creator's Safe address first so they can receive payment
             var creatorSafeAddress;

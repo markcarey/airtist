@@ -83,11 +83,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                             <span> Settings </span> 
-                        </a> 
-                        <ul>
-                            <li><a href="/settings/general" data-page="settings">General </a></li>
-                            <li><a href="/settings/billing" data-page="settings">Billing  <span class="nav-tag">3</span> </a></li>
-                        </ul>
+                        </a>
                     </li>
                     <li class="menu-profile menu">
                         <a href="/profile/" data-page="profile"> 
@@ -214,9 +210,8 @@
                         </a>
                         <div uk-drop="mode: click;offset:9" class="header_dropdown profile_dropdown border-t">
                             <ul>
-                                <li><a href="#"> Settings </a> </li>
-                                <li><a href="#"> Billing </a> </li>
-                                <li><a href="#"> Help </a> </li>
+                                <li><a href="/settings/"> Settings </a> </li>
+                                <li><a href="/upgrade/"> Upgrade </a> </li>
                                 <li><a href="#" class="logout"> Log Out</a></li>
                             </ul>
                         </div>
@@ -347,11 +342,9 @@
 
         <div id="settings" class="view container m-auto" style="display: none;"> 
 
-          <h1 class="text-2xl leading-none text-gray-900 tracking-tight mt-3"> Account Settings </h1>
+          <h1 class="text-2xl leading-none text-gray-900 tracking-tight mt-3"> Settings </h1>
           <ul class="mt-5 -mr-3 flex-nowrap lg:overflow-hidden overflow-x-scroll uk-tab">
-              <li class="uk-active"><a href="#">General</a></li>
-              <li><a href="#">Profile</a></li>
-              <li><a href="#">Billing</a></li>
+              <li class="uk-active"><a href="#">Profile</a></li>
           </ul>
 
           <div class="grid lg:grid-cols-3 mt-12 gap-8">
@@ -362,9 +355,13 @@
               <div class="bg-white rounded-md lg:shadow-lg shadow col-span-2">
 
                  <div class="grid grid-cols-2 gap-3 lg:p-6 p-4">
-                      <div class="col-span-2">
+                    <div class="col-span-2">
                         <label for="name"> Name</label>
                         <input id="name" name="name" type="text" placeholder="Your name.." class="shadow-none bg-gray-100">
+                    </div>
+                    <div class="col-span-2">
+                        <label for="image"> Profile Image URL</label>
+                        <input id="image" name="image" type="text" placeholder="https://.." class="shadow-none bg-gray-100">
                     </div>
                       <div class="col-span-2">
                           <label for="email"> Email</label>
@@ -559,7 +556,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
-    <script src="/js/dapp.js?v=174"></script>
+    <script src="/js/dapp.js?v=191"></script>
 
 </body>
 

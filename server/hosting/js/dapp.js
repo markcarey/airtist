@@ -12,7 +12,7 @@ const firebaseConfig = {
   };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts, notificationCount;
+var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts, resetIndie, notificationCount;
 var posts = {};
 var users = {};
 var loggedInUser;
@@ -113,7 +113,9 @@ async function loadUserProfile () {
     var user = await res.json();
     loggedInUser = user;
     if ("address" in user) {
+        var hasProfileImage = true;
         if (!user.profileImage) {
+            hasProfileImage = false;
             user.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + user.address + "/image";
         }
         $("img.header-avatar").attr("src", user.profileImage);
@@ -130,6 +132,18 @@ async function loadUserProfile () {
                         $("div.sidebar_inner").prepend( getSidebarProfileHTML(meta) );
                     } else {
                         $( "#sidebar-profile").replaceWith( getSidebarProfileHTML(meta) );
+                    }
+                    if ("name" in meta) {
+                        $("#name").val(meta.name);
+                    }
+                    if (hasProfileImage) {
+                        $("#image").val(meta.profileImage);
+                    }
+                    if ("about" in meta) {
+                        $("#about").val(meta.about);
+                    }
+                    if ("location" in meta) {
+                        $("#location").val(meta.location);
                     }
                     if (currentPage == "profile") {
                         if (!idForPage) {
@@ -175,11 +189,19 @@ async function loadUserProfile () {
                                 balances = doc.data();
                                 const paintBalance = parseFloat(ethers.utils.formatEther(balances.pAInt));
                                 const wethBalance = parseFloat(ethers.utils.formatEther(balances.WETH));
-                                $("#paint-balance").text(paintBalance.toFixed(0));
+                                if (meta.safeDeployed) {
+                                    $("#paint-balance").text(paintBalance.toFixed(0));
+                                } else {
+                                    $("#paint-balance").text(5);  // not real tokens (yet)
+                                }
                                 $("#wallet .paint").text(paintBalance.toFixed(3));
                                 $("#wallet .weth").text(wethBalance.toFixed(3));
                             }
                         });
+
+                    if (meta.safeDeployed == false) {
+                        $("#paint-balance").text(5);  // not real tokens (yet)
+                    }
 
                 });
             });
@@ -281,7 +303,7 @@ async function loadUsers () {
         });
 }
 
-function loadFeed () {
+function loadFeed (postId) {
     if (resetFeed) {
         resetFeed();
     }
@@ -344,6 +366,9 @@ function loadFeed () {
                         $(`#like-summary-${doc.id}`).html(html);
                     });
             });
+            if (postId) {
+                $(".feed-post").not("#post-"+postId).hide();
+            }
             updateFollowButtons();
             updateBalances();
     });
@@ -513,6 +538,17 @@ async function upgrade(data) {
     }
 }
 
+async function saveProfile(data) {
+    const headers = await getHeaders();
+    const res = await fetch('/api/profile', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    $("#save-profile").text("Saved");
+}
+
 async function postModal(data) {
     $("#story-modal").html( getModalHTML(data) );
     const doc = data.doc;
@@ -568,7 +604,7 @@ function updateFollowButtons() {
 function navigateTo(currentPage, idForPage) {
     if (currentPage == "feed") {
         $(".view").hide();
-        $("#feed").show();
+        $("#feed, .feed-post").show();
         $(".menu").removeClass("active");
         $(".menu-feed").addClass("active");
         history.pushState({}, "", "/");
@@ -597,7 +633,11 @@ function navigateTo(currentPage, idForPage) {
         history.pushState({}, "", "/settings/");
     } else if (currentPage == "p") {
         if (idForPage) {
-            loadIndie(idForPage);
+            $(".view").hide();
+            $("#feed").show();
+            $(".menu").removeClass("active");
+            $(".menu-feed").addClass("active");
+            $(".feed-post").not("#feed-post-"+idForPage).hide();
             history.pushState({}, "", `/p/${idForPage}`);
         }
     }
@@ -609,48 +649,14 @@ $( document ).ready(function() {
 
     navigateTo(currentPage, idForPage);
 
-    loadFeed();
+    if ((currentPage == "p") && idForPage) {
+        loadFeed(idForPage);
+    } else {
+        loadFeed();
+    }
     loadUsers();
 
     //loadProfile();
-
-    $("#loginOLD").click(async function (event) {
-        console.log("login button clicked!");
-        try {
-            const provider = await web3auth.connect();
-            $(".btn-logged-out").hide();
-            $(".btn-logged-in").show();
-            uiConsole("Logged in Successfully!");
-            const id_token = await web3auth.authenticateUser();
-            uiConsole(id_token);
-            const ethersProvider = new ethers.providers.Web3Provider(provider);
-            const signer = ethersProvider.getSigner();
-            const address = await signer.getAddress();
-            uiConsole(address);
-            var social = true;
-            const user = await web3auth.getUserInfo();
-            uiConsole(user);
-            if ($.isEmptyObject(user)) {
-                social = false;
-            }
-            // TODO: store JWT locally
-            id_token.social = social;
-            id_token.address = address;
-            const res = await fetch('/api/post', { 
-                method: 'POST', 
-                headers: new Headers({
-                    'Authorization': 'Bearer ' + id_token.idToken, 
-                    'X-web3Auth-Social': social,
-                    'Content-Type': 'application/json'
-                }), 
-                body: JSON.stringify({"foo": "bar"})
-            });
-            var result = await res.json();
-            uiConsole(result);
-        } catch (error) {
-            console.error(error.message);
-        }
-    });
 
     $("#login").click(async function (event) {
         console.log("login button clicked!");
@@ -713,6 +719,19 @@ $( document ).ready(function() {
         return false;
     });
 
+    $("#save-profile").click(function(){
+        // email skipped intentionally for now
+        $(this).text("Saving...");
+        var data = {
+            "name": $("#name").val(),
+            "profileImage": $("#image").val(),
+            "about": $("#about").val(),
+            "location": $("#location").val()
+        }
+        saveProfile(data);
+        return false;
+    });
+
     $( "#feed-posts" ).on( "click", ".comment-link", async function(e) {
         e.preventDefault();
         var id = $(this).data('id');
@@ -760,7 +779,7 @@ $( document ).ready(function() {
         data.parent = $(this).data('id');
         repost(data);
         $(this).find('i').css("color", "red");
-        $(this).find('.like-button-text').text(" Reposted");
+        $(this).find('.repost-button-text').text(" Reposted");
         return false;
     });
 
@@ -771,7 +790,7 @@ $( document ).ready(function() {
         data.id = $(this).data('id');
         mint(data);
         $(this).find('i').css("color", "red");
-        $(this).text(" Minting...");
+        $(this).find(".mint-button-text").text(" Minting...");
         return false;
     });
 
@@ -832,6 +851,12 @@ $( document ).ready(function() {
     $(".menu").find("a").click(function(e){
         const page = $(this).data("page");
         if (page) {
+            if (page == "profile") {
+                currentPage = "profile";
+                if (loggedInUser && ("address" in loggedInUser)) {
+                    loadProfile(loggedInUser.address);
+                }
+            }
             navigateTo(page);
             return false;
         } else {
@@ -954,7 +979,7 @@ function getFeedPostHTML(data) {
     const coin = data.currency ? data.currency : "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A"; 
     var mintHTML = `
     <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint nomint flex items-center space-x-2 flex-1 justify-end" style="display: none;">
-        <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (1 pAInt)</div>
+        <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (1 pAInt)</span></div>
     </a>
     `;
     if (data.minted) {
@@ -968,14 +993,14 @@ function getFeedPostHTML(data) {
     } else if (data.mintable) {
         mintHTML = `
         <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
-            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (${data.price} ${currencies[coin]})</div>
+            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (${data.price} ${currencies[coin]})</span></div>
         </a>
         `;
     } else if (loggedInUser && (loggedInUser.address.toLowerCase() == data.user.toLowerCase())) {
         // logged in user is creator, so give option to mint for 1 pAInt
         mintHTML = `
         <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
-            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Mint (1 pAInt)</div>
+            <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (1 pAInt)</span></div>
         </a>
         `;
     }
@@ -983,14 +1008,13 @@ function getFeedPostHTML(data) {
         if (data.mintStatus == "pending") {
             mintHTML = `
             <a href="#" data-id="${data.id}" data-user="${data.user}" class="nomint flex items-center space-x-2 flex-1 justify-end">
-                <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i>Minting...</div>
+                <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Minting...</span></div>
             </a>
             `;
         }
     }
     html = `
-    <!-- post 1-->
-    <div id="post-${data.id}" class="bg-white shadow rounded-md dark:bg-gray-900 -mx-2 lg:mx-0">
+    <div id="post-${data.id}" class="feed-post bg-white shadow rounded-md dark:bg-gray-900 -mx-2 lg:mx-0">
 
         <!-- post header-->
         <div class="flex justify-between items-center px-4 py-3">
@@ -1048,7 +1072,7 @@ function getFeedPostHTML(data) {
                     <div><i class="uil-comment-alt-message mr-1" style="font-size: 130%;"></i>Comment</div>
                 </a>
                 <a href="#" data-id="${data.id}" class="repost flex items-center space-x-2">
-                    <div><i class="uil-refresh mr-1" style="font-size: 130%;"></i>Repost</div>
+                    <div><i class="uil-refresh mr-1" style="font-size: 130%;"></i><span class="repost-button-text">Repost</span></div>
                 </a>
                 ${mintHTML}
             </div>
@@ -1180,6 +1204,8 @@ function getProfileCoverHTML(data) {
   if (!data.profileImage) {
     data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.address + "/image";
   }
+  data.about = data.about ? data.about : "";
+  data.location = data.location ? data.location : "";
   html = `
     <div id="profile-cover" class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
 
@@ -1201,7 +1227,11 @@ function getProfileCoverHTML(data) {
         <div class="lg:w/8/12 flex-1 flex flex-col lg:items-start items-center"> 
 
             <h2 class="font-semibold lg:text-2xl text-lg mb-2"> ${data.name}</h2>
-            <p class="lg:text-left mb-2 text-center  dark:text-gray-100"> </p>
+            <p class="lg:text-left mb-2 text-center  dark:text-gray-100">${data.about} </p>
+
+                            <div class="flex font-semibold mb-3 space-x-2  dark:text-gray-10">
+                                <a href="#">${data.location}</a>
+                            </div>
                 
                 <div class="capitalize flex font-semibold space-x-3 text-center text-sm my-2">
                     <a href="#" data-address="${data.address}" class="follow-button bg-pink-500 shadow-sm p-2 pink-500 px-6 rounded-md text-white hover:text-white hover:bg-pink-600"> Follow</a>
@@ -1323,6 +1353,45 @@ function getModalHTML(data) {
     if (!data.profileImage) {
         data.profileImage = "https://web3-images-api.kibalabs.com/v1/accounts/" + data.user + "/image";
     }
+    var icon = openseaIcon();
+    if (data.currency == "0") {
+        data.currency = "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A";
+    }
+    const coin = data.currency ? data.currency : "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A"; 
+    var mintHTML = `
+    <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint flex items-center space-x-4" style="display: none;">
+        <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> <span class="mint-button-text">Mint</span></div>
+    </a>
+    `;
+    if (data.minted) {
+        mintHTML = `
+        <a href="https://testnets.opensea.io/assets/goerli/${data.nftContract}/${data.tokenId}" target="_blank" data-id="${data.id}" class="flex items-center space-x-4">
+            <div class="flex font-bold items-baseline">${icon}</div>
+        </a>
+        `;
+    } else if (data.mintable) {
+        mintHTML = `
+        <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint flex items-center space-x-4">
+            <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> <span class="mint-button-text">Mint (${data.price} ${currencies[coin]})</span></div>
+        </a>
+        `;
+    } else if (loggedInUser && (loggedInUser.address.toLowerCase() == data.user.toLowerCase())) {
+        // logged in user is creator, so give option to mint for 1 pAInt
+        mintHTML = `
+        <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint flex items-center space-x-4">
+            <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> <span class="mint-button-text">Mint (1 pAInt)</span></div>
+        </a>
+        `;
+    }
+    if ("mintStatus" in data) {
+        if (data.mintStatus == "pending") {
+            mintHTML = `
+            <a href="#" data-id="${data.id}" data-user="${data.user}" class="nomint flex items-center space-x-4">
+                <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> <span class="mint-button-text">Minting...</span></div>
+            </a>
+            `;
+        }
+    }
     html = `
     <div class="uk-modal-dialog story-modal">
         <button class="uk-modal-close-default lg:-mt-9 lg:-mr-9 -mt-5 -mr-5 shadow-lg bg-white rounded-full p-4 transition dark:bg-gray-600 dark:text-white" type="button" uk-close></button>
@@ -1360,11 +1429,9 @@ function getModalHTML(data) {
                                 <div class="flex font-bold items-baseline"> <i class="uil-comment-alt-message mr-1"> </i> Comment</div>
                             </a>
                             <a href="#" data-id="${data.id}" class="repost flex items-center space-x-4">
-                                <div class="flex font-bold items-baseline"> <i class="uil-refresh mr-1"> </i> Repost</div>
+                                <div class="flex font-bold items-baseline"> <i class="uil-refresh mr-1"> </i> <span class="repost-button-text">Repost</span></div>
                             </a>
-                            <a href="#" data-id="${data.id}" class="mint flex items-center space-x-4">
-                                <div class="flex font-bold items-baseline"> <i class="uil-wallet mr-1"> </i> Mint</div>
-                            </a>
+                            ${mintHTML}
                         </div>
                         <hr class="-mx-4 my-3">
                         <div id="modal-like-summary-${data.id}" class="flex items-center space-x-3"> 
@@ -1450,7 +1517,6 @@ function getNotificationHTML(data) {
     var name = data.name ? data.name : "";
     var textLink = data.textLink ? data.textLink : ""; 
     var newOne = data.new ? "new" : "";
-    newOne = "new";
     var timeago =  moment.unix(data.timestamp.seconds - 30).fromNow();
     html = `
     <li id="notification-${data.id}" class="notification ${newOne}">

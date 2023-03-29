@@ -423,10 +423,10 @@ async function getLikeSummaryHTML(doc, querySnapshot) {
 async function getHeaders() {
     return new Promise(async (resolve, reject) => {
         const id_token = await web3auth.authenticateUser();
-        uiConsole(id_token);
+        //uiConsole(id_token);
         var social = true;
         const user = await web3auth.getUserInfo();
-        uiConsole(user);
+        //uiConsole(user);
         if ($.isEmptyObject(user)) {
             social = false;
         }
@@ -447,7 +447,7 @@ async function postArt(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
+    //uiConsole(result);
     $("button.uk-offcanvas-close").click();
     $("#post").text("Post");
     // TODO: reset fields
@@ -464,9 +464,7 @@ async function comment(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
-    // TODO: reset field
-    //$(`#comments-${data.id}`).append( getCommentHTML(result) );
+    //uiConsole(result);
     $(`#comment-text-${data.id}`).val('');
 }
 
@@ -478,7 +476,7 @@ async function like(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
+    //uiConsole(result);
 }
 
 async function repost(data) {
@@ -489,7 +487,7 @@ async function repost(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
+    //uiConsole(result);
 }
 
 async function mint(data) {
@@ -501,7 +499,7 @@ async function mint(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
+    //uiConsole(result);
 }
 
 
@@ -517,7 +515,7 @@ async function follow(address) {
     });
     var result = await res.json();
     updateFollowButtons();
-    uiConsole(result);
+    //uiConsole(result);
 }
 
 async function upgrade(data) {
@@ -528,7 +526,7 @@ async function upgrade(data) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
-    uiConsole(result);
+    //uiConsole(result);
     if (result.result == "ok") {
         if (loggedInUser && ("address" in loggedInUser)) {
             window.location = stripePaymentLink + loggedInUser.address;
@@ -578,8 +576,8 @@ function updateFollowButtons() {
         $(".follow-button").each(function(){
             console.log("found follow button!");
             var target = $(this).data('address');
-            console.log("target", target);
-            console.log("loggedInUser", loggedInUser);
+            //console.log("target", target);
+            //console.log("loggedInUser", loggedInUser);
             if ("following" in loggedInUser) {
                 const following = loggedInUser.following.map(address => address.toLowerCase());
                 if (following.includes(target.toLowerCase())) {
@@ -664,9 +662,9 @@ $( document ).ready(function() {
             const provider = await web3auth.connect();
             $(".btn-logged-out").hide();
             $(".btn-logged-in").show();
-            uiConsole("Logged in Successfully!");
+            //uiConsole("Logged in Successfully!");
             const user = await web3auth.getUserInfo();
-            uiConsole(user);
+            //uiConsole(user);
             if ($.isEmptyObject(user)) {
                 // Wallet user
                 await web3auth.authenticateUser();
@@ -698,17 +696,19 @@ $( document ).ready(function() {
         var data = {};
         data.prompt = $("#prompt").val();
         if (!data.prompt) {
-            // TODO: error, promptm required
+            // TODO: error, prompt required
             return false;
         }
-        data.title = $("#title").val();
-        data.mintable = $("#mintable").val();
-        if (data.mintable) {
+        data.title = $("#title").val();;
+        if ( $("#mintable").is(":checked") ) {
             data.mintable = true;
+        } else {
+            data.mintable = false;
         }
-        data.selfmint = $("#selfmint").val();
-        if (data.selfmint) {
+        if ( $("#selfmint").is(":checked") ) {
             data.selfmint = true;
+        } else {
+            data.selfmint = false;
         }
         data.category = $("#category").val();
         data.type = $("#type").val();
@@ -766,7 +766,6 @@ $( document ).ready(function() {
         var data = {};
         data.id = $(this).data('id');
         like(data);
-        //$(this).find('svg').attr("fill", "red");
         $(this).find('i').css("color", "red");
         $(this).find('.like-button-text').text(" Liked");
         return false;
@@ -875,87 +874,11 @@ $( document ).ready(function() {
             await web3auth.logout();
             $(".btn-logged-in").hide();
             $(".btn-logged-out").show();
-            navigateTo("feed");
+            //navigateTo("feed");
+            window.location = '/';
         } catch (error) {
             console.error(error.message);
         }
-    });
-
-
-
-
-
-
-    $("#get-user-info").click(async function (event) {
-    try {
-        const user = await web3auth.getUserInfo();
-        uiConsole(user);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#get-id-token").click(async function (event) {
-    try {
-        const id_token = await web3auth.authenticateUser();
-        uiConsole(id_token);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#get-chain-id").click(async function (event) {
-    try {
-        const chainId = await rpc.getChainId(web3auth.provider);
-        uiConsole(chainId);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#get-accounts").click(async function (event) {
-    try {
-        const accounts = await rpc.getAccounts(web3auth.provider);
-        uiConsole(accounts);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#get-balance").click(async function (event) {
-    try {
-        const balance = await rpc.getBalance(web3auth.provider);
-        uiConsole(balance);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#send-transaction").click(async function (event) {
-    try {
-        const receipt = await rpc.sendTransaction(web3auth.provider);
-        uiConsole(receipt);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#sign-message").click(async function (event) {
-    try {
-        const signedMsg = await rpc.signMessage(web3auth.provider);
-        uiConsole(signedMsg);
-    } catch (error) {
-        console.error(error.message);
-    }
-    });
-
-    $("#get-private-key").click(async function (event) {
-    try {
-        const privateKey = await rpc.getPrivateKey(web3auth.provider);
-        uiConsole(privateKey);
-    } catch (error) {
-        console.error(error.message);
-    }
     });
 
 }); // docReady

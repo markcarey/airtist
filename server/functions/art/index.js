@@ -22,17 +22,11 @@ const safeEthersLib = require('@safe-global/safe-ethers-lib');
 const EthersAdapter = safeEthersLib.default;
 
 const relayKit = require('@safe-global/relay-kit');
-//console.log("relayKit", relayKit);
 const GelatoRelayAdapter = relayKit.GelatoRelayAdapter;
-//console.log("GelatoRelayAdapter", GelatoRelayAdapter);
 const relayAdapter = new GelatoRelayAdapter(process.env.GELATO_API_KEY);
-//console.log(relayAdapter);
 
-//import { GelatoRelaySDK } from "@gelatonetwork/relay-sdk";
 const GelatoRelaySDK = require("@gelatonetwork/relay-sdk");
-//console.log("GelatoRelaySDK", GelatoRelaySDK);
 const relay = new GelatoRelaySDK.GelatoRelay();
-//console.log("relay", relay);
 
 const fetch = require('node-fetch');
 
@@ -258,7 +252,7 @@ async function generate(prompt, id) {
       const aiResponse = await openai.createImage({
         "prompt": prompt,
         "n": 1,
-        "size": '512x512' // TODO: increase for production?
+        "size": '512x512' // TODO: increase for PRO users
       });
       const result = await fetch(aiResponse.data.data[0].url);
   
@@ -666,6 +660,11 @@ api.post("/api/upgrade", getAuth, async function (req, res) {
     var name = req.q.name;
     var symbol = req.q.symbol;
 
+    if (req.user.plan == "pro") {
+        // already upgraded
+        return res.json({"result": "error", "error": "You are already on the PRO plan"});
+    }
+
     // User wants to upgrade, save name & symbol but actual upgrade will be triggered via Stripe webhook
     await db.collection('users').doc(req.user.address).update({
         "nftContractName": name,
@@ -750,7 +749,7 @@ api.post("/api/stripe", async function (req, res) {
 api.get('/images/:id.png', async function (req, res) {
     console.log("start /images/ with path", req.path);
     const id = req.params.id;
-    var cache = 'public, max-age=3600, s-maxage=86400';
+    var cache = 'public, max-age=86400, s-maxage=864000';
   
     // Step 1: Fetch Image
     //console.log("path", req.path);
@@ -786,7 +785,7 @@ api.get('/meta/:nftAddress/:id', async function (req, res) {
     console.log("tokenId+1", tokenId + 1);
     console.log("parseInt + 1", parseInt(tokenId) + 1);
     var cache = 'public, max-age=3600, s-maxage=86400';
-    cache = 'public, max-age=1, s-maxage=2'; // TODO: remove this!!
+    //cache = 'public, max-age=1, s-maxage=2'; 
 
     var meta;
   
@@ -1273,128 +1272,3 @@ module.exports.cronDeploy = async function(context) {
         });
 
 } // cronDeploy
-
-
-
-
-//export async function api(req, res) {
-module.exports.apiOld = async function(req,res) {
-    //console.log("provider", provider);
-
-    const network = await provider.getNetwork();
-    //console.log(network);
-
-    if (process.env.AIRTIST_HOT_PRIV == null) {
-        console.log("mising pk");
-    }
-    if (!process.env.AIRTIST_HOT_PRIV) {
-        console.log("!mising pk");
-    }
-    if (process.env.AIRTIST_HOT_PRIV == '') {
-        console.log("mising pk empyt string");
-    }
-
-    // Initialize signers
-    const owner1Signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
-    const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
-    //const owner2Signer = new ethers.Wallet(process.env.OWNER_2_PRIVATE_KEY!, provider);
-    //const owner3Signer = new ethers.Wallet(process.env.OWNER_3_PRIVATE_KEY!, provider);
-    //console.log(EthersAdapter);
-    //console.log("owner1Signer", owner1Signer);
-    //console.log("signer", signer);
-    const ethAdapter = new EthersAdapter({
-        "ethers": ethers,
-        "signerOrProvider": owner1Signer
-    });
-    //console.log(ethAdapter);
-    //console.log(SafeFactory);
-    //console.log(ethAdapterOwner1);
-    //const safeFactory = await SafeFactory.create({ ethAdapterOwner1 });
-    const safeFactory = await SafeFactory.create({ "ethAdapter": ethAdapter });
-    var owners = [await owner1Signer.getAddress(), process.env.SIDEDOOR_HOT, process.env.SIDEDOOR_COLD];
-    console.log(owners);
-    const threshold = 1;
-    const safeAccountConfig = {
-        "owners": owners,
-        "threshold": threshold
-    };
-    const safeDeploymentConfig = {
-        //"saltNonce": EOAaddress    // TODO: pass this from client web3auth
-    }
-    //const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig });
-
-    //const safeAddress = safeSdkOwner1.getAddress();
-    const safeAddress = await getSafeAddress(process.env.SIDEDOOR_COLD, false);
-
-    console.log('Your Safe has been deployed:');
-    console.log(`https://goerli.etherscan.io/address/${safeAddress}`);
-    console.log(`https://app.safe.global/gor:${safeAddress}`);
-
-    //const abi = ["function mint(address to)"];
-    const abi = ["function safeMint(address to)"];
-    // Generate the target payload
-    const contract = new ethers.Contract(process.env.AIRTIST_ADDR, abi, signer);
-    const testAddress = "0x0F74e1B1b88Dfe9DE2dd5d066BE94345ab0590F1";
-    const { data } = await contract.populateTransaction.safeMint(testAddress);
-    console.log(data);
-
-    const txnData = {
-        "to": process.env.AIRTIST_ADDR,
-        "data": data,
-        "value": 0
-    };
-      
-    if (false) {
-    const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
-    //const safeSDK = await Safe.create({ ethAdapter, "safeAddress": "0xAd534BE4F45d6E61a4FfB2eb6eabF5EADB2BCF8c" });  // change this!!!
-    const safeTransaction = await safeSDK.createTransaction({ "safeTransactionData": txnData });
-    console.log("safeTransation", JSON.stringify(safeTransaction));
-    console.log("safeTransation.data", JSON.stringify(safeTransaction.data));
-
-    const signedSafeTransaction = await safeSDK.signTransaction(safeTransaction);
-    console.log("signedSafeTransaction", JSON.stringify(signedSafeTransaction));
-    //const executeTxResponse = await safeSDK.executeTransaction(signedSafeTransaction);
-    //console.log("executeTxResponse", JSON.stringify(executeTxResponse));
-    }
-
-    const options = {
-        isSponsored: true // This parameter is mandatory to use the 1Balance method
-    }
-    if (false) {
-    const gelatoTask = await relayAdapter.relayTransaction({
-        "target": process.env.AIRTIST_ADDR, 
-        "encodedTransaction": data,
-        "chainId": 5,
-        options
-    });
-    console.log(gelatoTask);
-    }
-
-
-    const request = {
-        "chainId": provider.network.chainId,
-        "target": process.env.AIRTIST_ADDR,
-        "data": data,
-        "user": await signer.getAddress()
-    };
-    //const relayResponse = await relay.sponsoredCallERC2771(request, provider, process.env.GELATO_API_KEY);
-    //const relayResponse = await relay.sponsoredCallERC2771(
-    //    {"request": request},
-    //    {"walletOrProvider": 
-    //        {
-    //            "provider": provider
-    //        }
-    //    },
-    //    {"sponsorApiKey": process.env.GELATO_API_KEY}
-    //);
-
-    console.log("request", request);
-
-    const relayResponse = await relay.sponsoredCallERC2771(
-        request,
-        signer,
-        process.env.GELATO_API_KEY
-    );
-    
-    return res.json({"safe": safeAddress, "task": relayResponse});
-}

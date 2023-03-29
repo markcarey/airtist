@@ -48,12 +48,34 @@ const maxInt = ethers.constants.MaxUint256;
 const THREE_PER_MONTH = "1141552511415"; // flowRate per second for 3 monthly (18 decimals)
 const THIRTY_PER_MONTH = "11415525114150"; // flowRate per second for 30 monthly (18 decimals)
 
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+};
+
 function getContracts(pk, provider) {
     signer = new ethers.Wallet(pk, provider);
 }
 
 function abbrAddress(address){
     return address.slice(0,4) + "..." + address.slice(address.length - 4);
+}
+
+function fixAvatar(url) {
+    var newUrl;
+    // Twitter example: https://pbs.twimg.com/profile_images/1601225833741418497/PhQp9CL4_normal.jpg
+    if ( url.includes('twimg') ) {
+        newUrl = url.replace('_normal.', '.');
+    }
+    // Google example: https://lh3.googleusercontent.com/a/AGNmyxYJ3wOecX7hcroDs6W7KotI6mvTV5qM8Zlzdn0ObQ=s96-c
+    if ( url.includes('googleusercontent') ) {
+        newUrl = url.replace('=s96-c', '=s256-c');
+    }
+    // Discord: https://cdn.discord.com/avatars/822180265753444412/71df2273e2c42cf1ce797223999f1510.png?size=2048
+    if ( url.includes('cdn.discord.com') ) {
+        newUrl = url.replace('discord.com', 'discordapp.com');
+        newUrl = newUrl.replace('?size', '?nosize');
+    }
+    return newUrl ? newUrl : url;
 }
 
 async function getENS(address){
@@ -153,6 +175,8 @@ async function getGelatoNonce(address) {
 async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
     return new Promise(async (resolve, reject) => {
         const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+        const nonce = await getGelatoNonce(await signer.getAddress());
+        console.log("nonce", parseInt(nonce));
         const network = await provider.getNetwork();
         const abi = factoryJSON.abi;
         const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, abi, signer);
@@ -165,8 +189,6 @@ async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
             "user": await signer.getAddress()
         };
         console.log("request", request);
-        const nonce = await getGelatoNonce(await signer.getAddress());
-        console.log("nonce", nonce);
         const relayResponse = await relay.sponsoredCallERC2771(
             request,
             signer,
@@ -177,6 +199,7 @@ async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
 
 
         // 2. Now update pAINt stream to 30 per month
+        await sleep(5000);
         // stream txn
         const streamABI = ["function stream(address to, int96 flowRate, uint256 amount)"];
         const streamer = new ethers.Contract(process.env.PAINT_STREAMER, streamABI, signer);
@@ -349,7 +372,7 @@ async function getAuth(req, res, next) {
                 data.name = payload.name;
             }
             if ("profileImage" in payload) {
-                data.profileImage = payload.profileImage;
+                data.profileImage = fixAvatar(payload.profileImage);
             }
             var safeAddress = await getSafeAddress(address, false);
             console.log("safeAddress", safeAddress);
@@ -363,6 +386,7 @@ async function getAuth(req, res, next) {
             data.followerCount = 0;
             data.followingCount = 0;
             await db.collection('users').doc(address).set(data);
+            await db.collection('users').doc(address).collection("wallet").doc("balances").set({"pAInt": "5000000000000000000"});
             req.user = data;
         }
     }
@@ -995,6 +1019,7 @@ module.exports.newPost = async function(postDoc, context) {
                 }
 
                 // 2. drop 4 pAINnt and start stream of 3 monthly
+                await sleep(5000);
                 
                 // stream txn
                 const streamABI = ["function stream(address to, int96 flowRate, uint256 amount)"];

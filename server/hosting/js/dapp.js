@@ -12,7 +12,8 @@ const firebaseConfig = {
   };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts, resetIndie, notificationCount;
+var resetFeed, resetProfile, resetUsers, resetProfilePosts, resetTrendingPosts, resetIndie;
+var notificationCount = 0;
 var posts = {};
 var users = {};
 var loggedInUser;
@@ -27,7 +28,7 @@ const stripePaymentLink = "https://buy.stripe.com/test_aEU5nc7Fr5eBcIo3cc?client
 const path = window.location.pathname.split('/');
 var currentPage = "feed";
 var idForPage = '';
-console.log(path);
+//console.log(path);
 
 if (path[1]) {
     currentPage = path[1];
@@ -125,7 +126,7 @@ async function loadUserProfile () {
         resetProfile = db.collection("users").where("address", "==", user.address)
             .onSnapshot((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
-                    console.log("user", JSON.stringify(doc.data()));
+                    //console.log("user", JSON.stringify(doc.data()));
                     var meta = doc.data();
                     users[meta.address] = meta;
                     if ( $( "#sidebar-profile" ).length <= 0 ) {
@@ -160,11 +161,12 @@ async function loadUserProfile () {
                     doc.ref.collection("notifications").orderBy("timestamp", "asc")
                         .onSnapshot((querySnapshot) => {
                             querySnapshot.forEach((notification) => {
-                                console.log("notification", JSON.stringify(notification.data()));
+                                //console.log("notification", JSON.stringify(notification.data()));
                                 var n = notification.data();
                                 n.id = notification.id;
                                 if ( $( "#notification-" + n.id ).length <= 0 ) {
                                     n.new = true;
+                                    notificationCount++;
                                     $(`#notifications`).find(".simplebar-content").prepend( getNotificationHTML(n) );
                                 } else {
                                     n.new = false;
@@ -173,7 +175,7 @@ async function loadUserProfile () {
                                 if (simpleBar) {
                                     simpleBar.recalculate();
                                 }
-                                notificationCount = $("#notifications").find("li.notification.new").length;
+                                //notificationCount = $("#notifications").find("li.notification.new").length;
                                 if (notificationCount > 0) {
                                     $("#notification-count").text(notificationCount).show();
                                 } else {
@@ -187,8 +189,11 @@ async function loadUserProfile () {
                         .onSnapshot((doc) => {
                             if (doc.exists) {
                                 balances = doc.data();
-                                const paintBalance = parseFloat(ethers.utils.formatEther(balances.pAInt));
-                                const wethBalance = parseFloat(ethers.utils.formatEther(balances.WETH));
+                                var paintBalance = parseFloat(ethers.utils.formatEther(ethers.BigNumber.from(balances.pAInt)));
+                                var wethBalance = 0;
+                                if ("WETH" in balances) {
+                                    wethBalance = parseFloat(ethers.utils.formatEther(ethers.BigNumber.from(balances.WETH)));
+                                }
                                 if (meta.safeDeployed) {
                                     $("#paint-balance").text(paintBalance.toFixed(0));
                                 } else {
@@ -201,6 +206,9 @@ async function loadUserProfile () {
 
                     if (meta.safeDeployed == false) {
                         $("#paint-balance").text(5);  // not real tokens (yet)
+                    } else {
+                        $(".wallet-link").attr("href", `https://app.safe.global/balances?safe=gor:${user.safeAddress}`);
+                        updateBalances();
                     }
 
                 });
@@ -232,7 +240,7 @@ async function loadProfile (address) {
     resetProfile = db.collection("users").where("address", "==", address)
         .onSnapshot((querySnapshot) => {
             querySnapshot.forEach((doc) => {
-                console.log("user", JSON.stringify(doc.data()));
+                //console.log("user", JSON.stringify(doc.data()));
                 var meta = doc.data();
                 users[meta.address] = meta;
                 users[meta.address].doc = doc;
@@ -253,7 +261,7 @@ async function loadProfile (address) {
                     var count = 0;
                     querySnapshot.forEach((doc) => {
                         count++;
-                        console.log("post", JSON.stringify(doc.data()));
+                        //console.log("post", JSON.stringify(doc.data()));
                         var meta = doc.data();
                         meta.id = doc.id;
                         posts[meta.id] = meta;
@@ -282,7 +290,7 @@ async function loadUsers () {
             var count = 0;
             querySnapshot.forEach((doc) => {
                 count++;
-                console.log("user", JSON.stringify(doc.data()));
+                //console.log("user", JSON.stringify(doc.data()));
                 var meta = doc.data();
                 users[meta.address] = meta;
                 if (count <= 5) {
@@ -312,7 +320,7 @@ function loadFeed (postId) {
             var count = 0;
             querySnapshot.forEach((doc) => {
                 count++;
-                console.log("post", JSON.stringify(doc.data()));
+                //console.log("post", JSON.stringify(doc.data()));
                 var meta = doc.data();
                 meta.id = doc.id;
                 posts[meta.id] = meta;
@@ -321,13 +329,6 @@ function loadFeed (postId) {
                     $("#feed-posts").prepend( getFeedPostHTML(meta) );
                 } else {
                     $( "#post-" + doc.id ).replaceWith( getFeedPostHTML(meta) );
-                }
-                if ( $( "#post-grid-" + doc.id ).length <= 0 ) {
-                    //meta.type = "post";
-                    //$("#grid-posts").prepend( getGridPostHTML(meta) );
-                } else {
-                    //meta.type = "post";
-                    //$( "#post-grid-" + doc.id ).replaceWith( getGridPostHTML(meta) );
                 }
                 if ( $( "#trending-grid-" + doc.id ).length <= 0 ) {
                     meta.type = "trending";
@@ -349,7 +350,7 @@ function loadFeed (postId) {
                 doc.ref.collection("comments").orderBy("timestamp", "asc")
                     .onSnapshot((querySnapshot) => {
                         querySnapshot.forEach((comment) => {
-                            console.log("comment", JSON.stringify(comment.data()));
+                            //console.log("comment", JSON.stringify(comment.data()));
                             var c = comment.data();
                             c.id = comment.id;
                             if ( $( "#comment-" + c.id ).length <= 0 ) {
@@ -381,7 +382,7 @@ async function getLikeSummaryHTML(doc, querySnapshot) {
         var first = '';
         await querySnapshot.forEach((like) => {
             count++;
-            console.log("like", JSON.stringify(like.data()));
+            //console.log("like", JSON.stringify(like.data()));
             var l = like.data();
             l.id = like.id;
             if (count == 1) {
@@ -553,13 +554,13 @@ async function postModal(data) {
     await doc.ref.collection("likes").orderBy("timestamp", "desc")
         .onSnapshot(async (querySnapshot) => {
             const html = await getLikeSummaryHTML(doc, querySnapshot);
-            console.log(html, doc.id);
+            //console.log(html, doc.id);
             $(`#modal-like-summary-${doc.id}`).html(html);
         });
     await doc.ref.collection("comments").orderBy("timestamp", "asc")
         .onSnapshot(async (querySnapshot) => {
             querySnapshot.forEach((comment) => {
-                console.log("comment", JSON.stringify(comment.data()));
+                //console.log("comment", JSON.stringify(comment.data()));
                 var c = comment.data();
                 c.id = comment.id;
                 if ( $( "#modal-comment-" + c.id ).length <= 0 ) {
@@ -574,7 +575,7 @@ async function postModal(data) {
 function updateFollowButtons() {
     if (loggedInUser) {
         $(".follow-button").each(function(){
-            console.log("found follow button!");
+            //console.log("found follow button!");
             var target = $(this).data('address');
             //console.log("target", target);
             //console.log("loggedInUser", loggedInUser);
@@ -809,7 +810,7 @@ $( document ).ready(function() {
     });
 
     $(".upgrade-page").click(function(){
-        window.location(`/upgrade/`);
+        window.location = `https://airtist.xyz/upgrade/`;
         return false;
     });
 
@@ -866,6 +867,7 @@ $( document ).ready(function() {
     $(".notification-header, #notification-count").click(function(){
         UIkit.drop(document.getElementById('notification-drop')).show();
         $("#notifications").find("li.notification.new").removeClass("new");
+        notificationCount = 0;
         $("#notification-count").hide();
     });
 
@@ -875,7 +877,7 @@ $( document ).ready(function() {
             $(".btn-logged-in").hide();
             $(".btn-logged-out").show();
             //navigateTo("feed");
-            window.location = '/';
+            window.location = 'https://airtist.xyz';
         } catch (error) {
             console.error(error.message);
         }

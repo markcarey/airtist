@@ -1140,6 +1140,10 @@ function getProfileCoverHTML(data) {
   }
   data.about = data.about ? data.about : "";
   data.location = data.location ? data.location : "";
+  var pro = '';
+  if ( ("plan" in data) && (data.plan == "pro") ) {
+    pro = `<span class="pro-badge">PRO</span>`;
+  }
   html = `
     <div id="profile-cover" class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
 
@@ -1160,7 +1164,7 @@ function getProfileCoverHTML(data) {
 
         <div class="lg:w/8/12 flex-1 flex flex-col lg:items-start items-center"> 
 
-            <h2 class="font-semibold lg:text-2xl text-lg mb-2"> ${data.name}</h2>
+            <h2 class="font-semibold lg:text-2xl text-lg mb-2"> ${data.name}${pro}</h2>
             <p class="lg:text-left mb-2 text-center  dark:text-gray-100">${data.about} </p>
 
                             <div class="flex font-semibold mb-3 space-x-2  dark:text-gray-10">

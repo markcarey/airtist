@@ -126,7 +126,7 @@ The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data st
 
 The HTML and CSS of the AIrtist frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
 
-The frontend is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](https://github.com/markcarey/airtist/tree/main/server/hosting/).
+The frontend is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](server/hosting/).
 
 ### Server APIs and Datastore
 
@@ -161,17 +161,17 @@ Three smart contracts were written in Solidity for AIrtist:
 
 Here are some quick links to code in this repo, including some examples of where hackathon sponsor tech was used:
 
-- [Contracts](https://github.com/markcarey/airtist/tree/main/contracts/)
-- [Frontend](https://github.com/markcarey/airtist/tree/main/server/hosting/)
-- [AIrtist API](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L396)
-- [Server cron functions](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L1178)
-- [Server DB Triggers](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L920)
-- web3auth SDK: [client](https://github.com/markcarey/airtist/tree/main/server/hosting/js/dapp.js#L55), [server-side JWT verification](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L318)
-- Safe SDK: [deploy/predict Safe address](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L92), [send Safe transaction](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L128)
-- Gelato Relay SDK: [update Superfluid stream](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L230), [mint NFT](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L989), [deploy contract via Factory](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L175), [poll API for task status](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L1189)
-- Superfluid: [streaming contract](https://github.com/markcarey/airtist/tree/main/contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L230)
-- Stripe: [frontend redirect user to Stripe payment link](https://github.com/markcarey/airtist/tree/main/server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L703)
-- OpenAI SDK: [generate AI image](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L273)
+- [Contracts](contracts/)
+- [Frontend](server/hosting/)
+- [AIrtist API](server/functions/art/index.js#L396)
+- [Server cron functions](server/functions/art/index.js#L1178)
+- [Server DB Triggers](server/functions/art/index.js#L920)
+- web3auth SDK: [client](server/hosting/js/dapp.js#L55), [server-side JWT verification](server/functions/art/index.js#L318)
+- Safe SDK: [deploy/predict Safe address](server/functions/art/index.js#L92), [send Safe transaction](server/functions/art/index.js#L128)
+- Gelato Relay SDK: [update Superfluid stream](server/functions/art/index.js#L230), [mint NFT](server/functions/art/index.js#L989), [deploy contract via Factory](server/functions/art/index.js#L175), [poll API for task status](server/functions/art/index.js#L1189)
+- Superfluid: [streaming contract](contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](server/functions/art/index.js#L230)
+- Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](server/functions/art/index.js#L703)
+- OpenAI SDK: [generate AI image](server/functions/art/index.js#L273)
 
 ## Next Steps
 

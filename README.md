@@ -94,3 +94,28 @@ When a user buys a PRO subscription, an event is sent from Stripe to a webhook e
 
 When a PRO subscription is cancelled, another event webhook automatically triggers a transaction to reduce the stream back to `3 pAInt` per month and flip the user back to minting on the shared NFT contract.
 
+## How it was Built
+
+There are three main categories of code for AIrtist:
+
+- Frontend Client App
+- Server APIs and Datastore
+- Ethereum Smart Contracts
+
+### Frontend Client App
+
+The live demo of the front end AIrtist app is located at https://airtist.xyz. The app includes javascript code that primarily interfaces with AIrtist server API endpoints.
+
+The javascript web3auth SDK is used in the frontend to power all forms of authentication. Using web3 auth, the user can choose to login with social apps (ie. Twitter/Facebook), email, or wallet (ie. Metamask/WalleConnect). The web3auth SDK inetrfaces with the nodes in the [Auth Network](https://medium.com/toruslabs/introducing-the-auth-network-b8fab1b5e1f6) to produce an app-specific private key for the user. The private key exists only in the browser and it never sent to AIrtist servers nor saved by any thirdparty. The web3auth SDK also produced a JWT auth token, that is used by AIrtist as an API key when calling authenicated AIrtist API endpoints (see more below).
+
+The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data stored in a Firestore data store, data about users, posts, followers, social reactions, etc.
+
+The HTML and CSS of the AIrtist frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
+
+The front is hosted using Firebase Hosting. The frontend code can be found in this repo at [server/hosting/](server/hosting/).
+
+### Server
+
+
+
+

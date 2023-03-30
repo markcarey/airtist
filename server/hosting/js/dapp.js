@@ -210,6 +210,7 @@ async function loadUserProfile () {
                         $(".wallet-link").attr("href", `https://app.safe.global/balances?safe=gor:${user.safeAddress}`);
                         updateBalances();
                     }
+                    updateFollowButtons();
 
                 });
             });
@@ -515,6 +516,14 @@ async function follow(address) {
         body: JSON.stringify(data)
     });
     var result = await res.json();
+    if (loggedInUser) {
+        if ("following" in loggedInUser) {
+            loggedInUser.following.push(address.toLowerCase());
+        } else {
+            loggedInUser.following = [];
+            loggedInUser.following.push(address.toLowerCase());
+        }
+    }
     updateFollowButtons();
     //uiConsole(result);
 }

@@ -4,7 +4,7 @@
 
 AIrtist is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on the blockchain.
 
-![example post](https://airtist.xyz/assets/images/demo/airtist-example.png)
+![example post](https://airtist.xyz/assets/images/demo/airtist-example-small.png)
 
 AIrtist uses "account abstraction" to make it seamless for users, without needing wallets nor gas tokens to get started. Even when minting NFTs, users never have to "send transactions", "sign messages", nor write down 12- or 24-word phrases on pieces of paper.
 
@@ -49,7 +49,7 @@ Creators can always decide later -- after posting -- to mint their own images.
 
 Minting during art creation is done by toggling a checkbox. For images already posted, minting involves a single click/tap. In both cases, the user does not have to send transactions nor sign messages.
 
-![minted](https://airtist.xyz/assets/images/demo/airtist-opensea.png)
+![minted](https://airtist.xyz/assets/images/demo/airtist-opensea-small.png)
 
 ### The pAInt Super Token
 
@@ -196,4 +196,4 @@ Here are some quick links to code in this repo, including some examples of where
 - Discord: @markcarey#5670
 - Github: @markcarey
 
-![grid](https://airtist.xyz/assets/images/demo/airtist-grid.png)
+![grid](https://airtist.xyz/assets/images/demo/airtist-grid-small.png)

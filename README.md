@@ -22,6 +22,10 @@ Social login users:
 - are not asked to “sign” any messages
 - do not need ETH or any other token for “gas”
 
+### ENS Name Support
+
+Note that when choosing the `wallet` login option, AIrtist checks for an ENS name for the connecting address, and if found, will use that as the "name" of the user on AIrtist. For example, if I choose to login via web3auth using my primary Metamask address, AIrtist will show me as `markcarey.eth`.
+
 ## Web 2.0 Features
 
 Several "web 2.0" styles features include:
@@ -112,10 +116,35 @@ The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data st
 
 The HTML and CSS of the AIrtist frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
 
-The front is hosted using Firebase Hosting. The frontend code can be found in this repo at [server/hosting/](server/hosting/).
+The front is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](server/hosting/).
 
-### Server
+### Server APIs and Datastore
 
+AIrtist uses three core services from Google Firebase for server-side functions.
 
+- *Firestore*. Data about users and posts are store in a no-SQL Firestore datastore.
+- *Storage*. Once images have been generated via OpenAI SDK, they are stored using Firebase Storage (Google Cloud Storage)
+- *Firebase Functions* There are three types of serverless functions.
+  - The first is an HTTPS function that handles request to the AIrtist API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts. 
+  - Next there are sveral function that are triggered by adding or updating data in the Firestore database, which in turn may trigger interactions with the Safe and Gelato SDKs to execute functions onchain.
+  - Finally, there are two "cron" functions that run periodically. These poll the Gelato Relay API for the status of transactions that have been relayed to Gelato. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and releveant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
+
+### Ethereum Smart Contracts
+
+Three smart contracts were written in Solidity for AIrtist:
+
+- `AIrtNFT.sol` - This is an `ERC721` NFT smart contract, leveraging OpenZeppelin contracts. A notable inclusion is the support for `ERC2771Context` which enables secure permission-based function calls via Gelato Relay. Also added are two minting functions which power minting of new images, collecting and tranferring `pAInt` or `WETH` tokens when necessary.
+- `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` contract. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AIrtist NFT!_.
+- `Streamer.sol` - This contract uses the Superfluid protocol to enable streaming of the `pAInt` utility token, which was also deployed by this contract at deployment time. The core function of the streamer contract enables the starting, updating or stopping of a `pAInt` stream to a recipient, while optionally dropping some `pAInt` immediately (not streamed). 
+
+#### Deployed Contracts (Goerli Testnet)
+
+- (Shared) `AIrtNFT` contract: `0x85ea20193d88A4e4BCb45224CE462029608158c3` [#](https://goerli.etherscan.io/address/0x85ea20193d88A4e4BCb45224CE462029608158c3)
+- `AIrtNFTFactory` contract: `0x9d1248BA4EF720da649aE5bFa9cA46311C028af4` [#](https://goerli.etherscan.io/address/0x9d1248BA4EF720da649aE5bFa9cA46311C028af4)
+- `Streamer` contract: `0x83D4A49b80Af1CE060361A457a02d057560A9aD9` [#](https://goerli.etherscan.io/address/0x83D4A49b80Af1CE060361A457a02d057560A9aD9)
+- `pAInt` Super Token: `0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A` [#](https://goerli.etherscan.io/address/0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A)
+- Example PRO `AirNFT` contract deployed using the factory contract via Gelato Relay: `0xbeccc3e7bfcc3a2071ff4c11ef5eab7d134906f2` [#](https://goerli.etherscan.io/address/0xbeccc3e7bfcc3a2071ff4c11ef5eab7d134906f2)
+
+*Note:* the "Transactions" tab on Etherscan shows empty (or almost) for the above contracts. This is because almost all transactions are executed via Gelato Relay. As such, you can view the "Internal Transactions" tab to view the activity on these contracts.
 
 

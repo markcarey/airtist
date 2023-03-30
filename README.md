@@ -14,7 +14,7 @@ AIrtist uses "account abstraction" to make it seamless for users, without needin
 
 ## Sign and Login
 
-Using web3Auth, AIrtist login options include social, email, or wallet. Social/email logins will generate an app-specific private key … behind the scenes, no seed phrase needed – only the user has access to the [complete private key](https://web3auth.io/docs/infrastructure/key-management) (self-custody), enabled by Multi-Paty Computation (MPC).
+Using web3Auth, AIrtist login options include social, email, or wallet. Social/email logins will generate an app-specific private key … behind the scenes, no seed phrase needed – only the user has access to the [complete private key](https://web3auth.io/docs/infrastructure/key-management) (self-custody), enabled by Multi-Party Computation (MPC).
 
 Social login users:
 - do not need a wallet
@@ -33,17 +33,19 @@ Several "web 2.0" styles features include:
 - *Liking.* Users can "like" images shared by others
 - *Commenting.* User can post comments in reply to shared images
 - *Reposting.* This is a bit like _retweeting_, but with a twist. A `repost` does *not* re-share the same identical image, but rather uses the same identical text prompt to generate an entirely *new* image.
-- *Following.* Users can follow other users to if they like their artwork.
+- *Following.* Users can follow other users, if they like their artwork.
 
 ## Web3 Features
 
 Some users may optionally decide to mint images as NFTs on the blockchain. When users post new artwork, they can:
+
 1. Choose to immediately mint the image on the blockchain.
 2. Enable others to mint the image for a price.
 3. Neither (image will not be minted)
+
 Creators can always decide later -- after posting -- to mint their own images.
 
-Minting during art creation is done by toggling a checkbox. For image already posted, minting involves a single click/tap. In both cases, the user does not have to send transactions nor sign messages.
+Minting during art creation is done by toggling a checkbox. For images already posted, minting involves a single click/tap. In both cases, the user does not have to send transactions nor sign messages.
 
 ### The pAInt Super Token
 
@@ -56,15 +58,17 @@ See the streams on [Superfluid Console](https://console.superfluid.finance/goerl
 ### The First Mint - Behind the Scenes
 
 When the user decides to mint their first NFT -- and not before -- on-chain transactions are triggered, behind the scenes:
+
 1. *A Safe smart wallet is deployed.* This is a “1 of 3” multi-signature Safe. The user’s web3auth-generated address has full access as 1 of the 3 owners. The second owner is a AIrtist Hot wallet enabling behind-the-scenes Safe transactions on the behalf of the user. The third owner is a AIrtist cold wallet for emergency/recovery purposes.
 2. ERC20 Approval transactions are sent from the Safe to facilitate the first and future mints.
 3. Sent via Gelato Relay, a transaction is sent to start streaming `3 pAInt` per month to the Safe.
 4. Also via Gelato Relay, the minting transaction is sent to mint the NFT to the shared AIrtist NFT contract.
-Remember, the above 4 transaction happen *behind the scenes*. _From the user's perspective all they did was check a box or tap a link_.
+
+Remember, the above 4 transactions happen *behind the scenes*. From the user's perspective _all they did was check a box or tap a link_.
 
 #### Gelato Relay Sponsored ERC2771 Calls
 
-AIrtist uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AIrtist's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the three contracts deployed by AIrtist support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AIrtist but realyed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permission to restrict function to authorized signers.
+AIrtist uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AIrtist's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the three contracts deployed by AIrtist support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AIrtist but relayed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permissions to restrict functions to authorized signers.
 
 ### Subsequent NFT Minting
 
@@ -72,11 +76,11 @@ Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to m
 
 #### Selling NFTs without a Deployed Safe to receive Payment?
 
-*Scenario:* a creator has joined AIrtist and posted several images, but has not minted any yet. But the creator has enabled minting of the posts, and set prices and currencies (`pAInt` or `WETH`) in each case. What happens when another user decides to mint these images? How does the creator get paid, when no Safe has (yet) be deployed for the creator? As mentioned above, the Safe is only deployed when the user does their first mint, and not before. Even though the Safe has not been deployed, the creator still gets paid! When the creator joined AIrtist, the Safe SDK is used to accurately _predict_ the user's Safe address, _even though it has not yet been deployed_. This predicted Safe address is assigned to creator's user account, and when `pAInt` or `WETH` gets sent to that address, it just works, and the funds are [owned by the predicted Safe address](https://blog.openzeppelin.com/getting-the-most-out-of-create2/). When/if the creator triggers their first mint, the Safe will then be deployed to the predicted address and the creator will have full access to the tokens sent previously.
+*Scenario:* a creator has joined AIrtist and posted several images, but has not minted any yet. But the creator has enabled minting of the posts, and set prices and currencies (`pAInt` or `WETH`) in each case. What happens when another user decides to mint these images? How does the creator get paid, when no Safe has (yet) be deployed for the creator? As mentioned above, the Safe is only deployed when the user does _their_ first mint, and not before. Even though the Safe has not been deployed, the creator still gets paid! When the creator joined AIrtist, the Safe SDK is used to accurately _predict_ the user's Safe address, _even though it has not yet been deployed_. This predicted Safe address is assigned to creator's user account, and when `pAInt` or `WETH` gets sent to that address, it just works, and the funds are [owned by the predicted Safe address](https://blog.openzeppelin.com/getting-the-most-out-of-create2/). When/if the creator triggers their first mint, the Safe will then be deployed to the predicted address and the creator will have full access to the tokens sent previously.
 
 ## AIrtist PRO
 
-Since we are sponsoring -- paying for gas -- users' transactions, using `pAInt` as a utility token helps limit the ghas costs associated with users on the FREE plan. These user receive `3 pAInt` monthly, streamed in real-time.
+Since we are sponsoring -- paying the gas for -- users' transactions, using `pAInt` as a utility token helps limit the gas costs associated with users on the FREE plan. These users receive `3 pAInt` monthly, streamed in real-time.
 
 For serious AIrtists, minting 3 NFTs per month may not be enough.
 
@@ -94,7 +98,7 @@ AIrtist PRO is a monthly subscription powered by Stripe Billing. Consistent with
 
 ### Stripe Webhooks
 
-When a user buys a PRO subscription, an event is sent from Stripe to a webhook endpoint on the AIrtist API. This triggers the 2 transactions (via Gelato Relay) to deploy an NFT contract for the user and to increase the stream to `30 pAInt` per month. Additionally, as an "upgrade bonus", `10 pAInt` are airdropped to the PRO user's Safe at the time of the upgrade. From this point forward, the user's image are minted to their own contract/collection, which contains only their own artwork.
+When a user buys a PRO subscription, an event is sent from Stripe to a webhook endpoint on the AIrtist API. This triggers the 2 transactions (via Gelato Relay) to deploy an NFT contract for the user and to increase the stream to `30 pAInt` per month. Additionally, as an "upgrade bonus", `10 pAInt` are airdropped to the PRO user's Safe at the time of the upgrade. From this point forward, the user's images are minted to their own contract/collection, which contains only their own artwork.
 
 When a PRO subscription is cancelled, another event webhook automatically triggers a transaction to reduce the stream back to `3 pAInt` per month and flip the user back to minting on the shared NFT contract.
 
@@ -110,30 +114,30 @@ There are three main categories of code for AIrtist:
 
 The live demo of the front end AIrtist app is located at https://airtist.xyz. The app includes javascript code that primarily interfaces with AIrtist server API endpoints.
 
-The javascript web3auth SDK is used in the frontend to power all forms of authentication. Using web3 auth, the user can choose to login with social apps (ie. Twitter/Facebook), email, or wallet (ie. Metamask/WalleConnect). The web3auth SDK inetrfaces with the nodes in the [Auth Network](https://medium.com/toruslabs/introducing-the-auth-network-b8fab1b5e1f6) to produce an app-specific private key for the user. The private key exists only in the browser and it never sent to AIrtist servers nor saved by any thirdparty. The web3auth SDK also produced a JWT auth token, that is used by AIrtist as an API key when calling authenicated AIrtist API endpoints (see more below).
+The javascript web3auth SDK is used in the frontend to power all forms of authentication. Using web3 auth, the user can choose to login with social apps (ie. Twitter/Facebook), email, or wallet (ie. Metamask/WalletConnect). The web3auth SDK interfaces with the nodes in the [Auth Network](https://medium.com/toruslabs/introducing-the-auth-network-b8fab1b5e1f6) to produce an app-specific private key for the user. The private key exists only in the browser and it never sent to AIrtist servers nor saved by any third party. The web3auth SDK also produced a JWT auth token, that is used by AIrtist as an API key when calling authenticated AIrtist API endpoints (see more below).
 
-The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data stored in a Firestore data store, data about users, posts, followers, social reactions, etc.
+The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data stored in a Firestore data store: data about users, posts, followers, social reactions, etc.
 
 The HTML and CSS of the AIrtist frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
 
-The front is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](server/hosting/).
+The frontend is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](https://github.com/markcarey/airtist/tree/main/server/hosting/).
 
 ### Server APIs and Datastore
 
 AIrtist uses three core services from Google Firebase for server-side functions.
 
-- *Firestore*. Data about users and posts are store in a no-SQL Firestore datastore.
+- *Firestore*. Data about users and posts are store in a noSQL Firestore datastore.
 - *Storage*. Once images have been generated via OpenAI SDK, they are stored using Firebase Storage (Google Cloud Storage)
 - *Firebase Functions* There are three types of serverless functions.
-  - The first is an HTTPS function that handles request to the AIrtist API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts. 
-  - Next there are sveral function that are triggered by adding or updating data in the Firestore database, which in turn may trigger interactions with the Safe and Gelato SDKs to execute functions onchain.
-  - Finally, there are two "cron" functions that run periodically. These poll the Gelato Relay API for the status of transactions that have been relayed to Gelato. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and releveant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
+  - The first is an HTTPS function that handles requests to the AIrtist API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts.
+  - Next there are several functions that are triggered by adding or updating data in the Firestore database, which in turn may trigger interactions with the Safe and Gelato SDKs to execute functions onchain.
+  - Finally, there are two "cron" functions that run periodically. These poll the Gelato Relay API for the status of transactions that have been relayed to Gelato. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and relevant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
 
 ### Ethereum Smart Contracts
 
 Three smart contracts were written in Solidity for AIrtist:
 
-- `AIrtNFT.sol` - This is an `ERC721` NFT smart contract, leveraging OpenZeppelin contracts. A notable inclusion is the support for `ERC2771Context` which enables secure permission-based function calls via Gelato Relay. Also added are two minting functions which power minting of new images, collecting and tranferring `pAInt` or `WETH` tokens when necessary.
+- `AIrtNFT.sol` - This is an `ERC721` NFT smart contract, leveraging OpenZeppelin contracts. A notable inclusion is the support for `ERC2771Context` which enables secure permission-based function calls via Gelato Relay. Also added are two minting functions which power minting of new images, collecting and transferring `pAInt` or `WETH` tokens when necessary.
 - `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` contract. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AIrtist NFT!_.
 - `Streamer.sol` - This contract uses the Superfluid protocol to enable streaming of the `pAInt` utility token, which was also deployed by this contract at deployment time. The core function of the streamer contract enables the starting, updating or stopping of a `pAInt` stream to a recipient, while optionally dropping some `pAInt` immediately (not streamed). 
 
@@ -151,17 +155,17 @@ Three smart contracts were written in Solidity for AIrtist:
 
 Here are some quick links to code in this repo, including some examples of where hackathon sponsor tech was used:
 
-- [Contracts](contracts/)
-- [Frontend](server/hosting/)
-- [AIrtist API](server/functions/art/index.js#L396)
-- [Server cron functions](server/functions/art/index.js#L1178)
-- [Server DB Triggers](server/functions/art/index.js#L920)
-- web3auth SDK: [client](server/hosting/js/dapp.js#L55), [server-side JWT verification](server/functions/art/index.js#L318)
-- Safe SDK: [deploy/predict Safe address](server/functions/art/index.js#L92), [send Safe transaction](server/functions/art/index.js#L128)
-- Gelato Relay SDK: [update Superfluid stream](server/functions/art/index.js#L230), [mint NFT](server/functions/art/index.js#L989), [deploy contract via Factory](server/functions/art/index.js#L175), [poll API for task status](server/functions/art/index.js#L1189)
-- Superfluid: [streaming contract](contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](server/functions/art/index.js#L230)
-- Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](server/functions/art/index.js#L703)
-- OpenAI SDK: [generate AI image](server/functions/art/index.js#L273)
+- [Contracts](https://github.com/markcarey/airtist/tree/main/contracts/)
+- [Frontend](https://github.com/markcarey/airtist/tree/main/server/hosting/)
+- [AIrtist API](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L396)
+- [Server cron functions](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L1178)
+- [Server DB Triggers](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L920)
+- web3auth SDK: [client](https://github.com/markcarey/airtist/tree/main/server/hosting/js/dapp.js#L55), [server-side JWT verification](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L318)
+- Safe SDK: [deploy/predict Safe address](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L92), [send Safe transaction](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L128)
+- Gelato Relay SDK: [update Superfluid stream](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L230), [mint NFT](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L989), [deploy contract via Factory](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L175), [poll API for task status](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L1189)
+- Superfluid: [streaming contract](https://github.com/markcarey/airtist/tree/main/contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L230)
+- Stripe: [frontend redirect user to Stripe payment link](https://github.com/markcarey/airtist/tree/main/server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L703)
+- OpenAI SDK: [generate AI image](https://github.com/markcarey/airtist/tree/main/server/functions/art/index.js#L273)
 
 ## Next Steps
 
@@ -171,7 +175,7 @@ Here are some quick links to code in this repo, including some examples of where
   - NFT auctions
 - Mobile apps for iOS and Android
 - Better support for web3-native users (use own wallet instead of Safe, on-chain Subscriptions, etc.)
-- Mainnet launch to Layer2(s) and ETH mainnet (with higher prices)
+- Production launch to Layer2(s) and ETH mainnet (with higher prices)
 
 ## Links
 
@@ -181,10 +185,7 @@ Here are some quick links to code in this repo, including some examples of where
 
 ## Contact
 
-Twitter: @mthacks
-Farcaster: @markcarey
-Discord: @markcarey#5670
-Github: @markcarey
-
-
-
+- Twitter: @mthacks
+- Farcaster: @markcarey
+- Discord: @markcarey#5670
+- Github: @markcarey

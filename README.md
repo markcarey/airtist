@@ -49,6 +49,8 @@ Creators can always decide later -- after posting -- to mint their own images.
 
 Minting during art creation is done by toggling a checkbox. For images already posted, minting involves a single click/tap. In both cases, the user does not have to send transactions nor sign messages.
 
+![minted](https://airtist.xyz/assets/images/demo/airtist-opensea.png)
+
 ### The pAInt Super Token
 
 When minting your own artwork, it costs `1 pAInt` token. When minting images posted by others, you pay the price set by the creator, denominated in either `pAInt` or `WETH`.
@@ -56,6 +58,8 @@ When minting your own artwork, it costs `1 pAInt` token. When minting images pos
 `pAInt` is a native Super Token that supports real-time streaming, powered by Superfluid. It acts as a utility token on the AIrtist platform for minting NFTs. Users start with `5 pAInt` and after their first mint, active users receive `3 pAInt` per month, streamed in real-time.
 
 See the streams on [Superfluid Console](https://console.superfluid.finance/goerli/accounts/0x83D4A49b80Af1CE060361A457a02d057560A9aD9?tab=streams). It's like watching paint stream.😐
+
+![pAInt stream](https://airtist.xyz/assets/images/demo/airtist-stream.gif)
 
 ### The First Mint - Behind the Scenes
 
@@ -191,3 +195,5 @@ Here are some quick links to code in this repo, including some examples of where
 - Farcaster: @markcarey
 - Discord: @markcarey#5670
 - Github: @markcarey
+
+![grid](https://airtist.xyz/assets/images/demo/airtist-grid.png)

@@ -14,7 +14,7 @@ AIrtist uses "account abstraction" to make it seamless for users, without needin
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
 
-## Sign and Login
+## Signup and Login
 
 Using web3Auth, AIrtist login options include social, email, or wallet. Social/email logins will generate an app-specific private key … behind the scenes, no seed phrase needed – only the user has access to the [complete private key](https://web3auth.io/docs/infrastructure/key-management) (self-custody), enabled by Multi-Party Computation (MPC).
 

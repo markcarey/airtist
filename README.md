@@ -147,4 +147,44 @@ Three smart contracts were written in Solidity for AIrtist:
 
 *Note:* the "Transactions" tab on Etherscan shows empty (or almost) for the above contracts. This is because almost all transactions are executed via Gelato Relay. As such, you can view the "Internal Transactions" tab to view the activity on these contracts.
 
+### Quick Links for Code
+
+Here are some quick links to code in this repo, including some examples of where hackathon sponsor tech was used:
+
+- [Contracts](contracts/)
+- [Frontend](server/hosting/)
+- [AIrtist API](server/functions/art/index.js#L396)
+- [Server cron functions](server/functions/art/index.js#L1178)
+- [Server DB Triggers](server/functions/art/index.js#L920)
+- web3auth SDK: [client](server/hosting/js/dapp.js#L55), [server-side JWT verification](server/functions/art/index.js#L318)
+- Safe SDK: [deploy/predict Safe address](server/functions/art/index.js#L92), [send Safe transaction](server/functions/art/index.js#L128)
+- Gelato Relay SDK: [update Superfluid stream](server/functions/art/index.js#L230), [mint NFT](server/functions/art/index.js#L989), [deploy contract via Factory](server/functions/art/index.js#L175), [poll API for task status](server/functions/art/index.js#L1189)
+- Superfluid: [streaming contract](contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](server/functions/art/index.js#L230)
+- Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](server/functions/art/index.js#L703)
+- OpenAI SDK: [generate AI image](server/functions/art/index.js#L273)
+
+## Next Steps
+
+- Further development of PRO premium features:
+  - Art generation tools
+  - Open Edition NFTs
+  - NFT auctions
+- Mobile apps for iOS and Android
+- Better support for web3-native users (use own wallet instead of Safe, on-chain Subscriptions, etc.)
+- Mainnet launch to Layer2(s) and ETH mainnet (with higher prices)
+
+## Links
+
+ - Try it now: https://airtist.xyz (minting on Goerli testnet)
+ - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
+ - Demo Video: https://youtu.be/HlvKtf1z-AM
+
+## Contact
+
+Twitter: @mthacks
+Farcaster: @markcarey
+Discord: @markcarey#5670
+Github: @markcarey
+
+
 

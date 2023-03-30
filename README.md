@@ -70,3 +70,27 @@ Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to m
 
 *Scenario:* a creator has joined AIrtist and posted several images, but has not minted any yet. But the creator has enabled minting of the posts, and set prices and currencies (`pAInt` or `WETH`) in each case. What happens when another user decides to mint these images? How does the creator get paid, when no Safe has (yet) be deployed for the creator? As mentioned above, the Safe is only deployed when the user does their first mint, and not before. Even though the Safe has not been deployed, the creator still gets paid! When the creator joined AIrtist, the Safe SDK is used to accurately _predict_ the user's Safe address, _even though it has not yet been deployed_. This predicted Safe address is assigned to creator's user account, and when `pAInt` or `WETH` gets sent to that address, it just works, and the funds are [owned by the predicted Safe address](https://blog.openzeppelin.com/getting-the-most-out-of-create2/). When/if the creator triggers their first mint, the Safe will then be deployed to the predicted address and the creator will have full access to the tokens sent previously.
 
+## AIrtist PRO
+
+Since we are sponsoring -- paying for gas -- users' transactions, using `pAInt` as a utility token helps limit the ghas costs associated with users on the FREE plan. These user receive `3 pAInt` monthly, streamed in real-time.
+
+For serious AIrtists, minting 3 NFTs per month may not be enough.
+
+AIrtist uses a _freemium_ business model, where cloud-computing and gas costs are subsidized (sponsored) for FREE users, while revenue from PRO users more than offsets those costs.
+
+AIrtist PRO is a monthly subscription powered by Stripe Billing. Consistent with the goal of account abstraction, PRO users pay via credit card recurring billing (with future plans to add support for crypto-native billing options).
+
+### AIrtist PRO Features
+
+- a dedicated NFT contract for each PRO user (deployed from the AIrtist Factory contract via Gelato Relay)
+- increased stream, now `30 pAInt` streamed monthly in real-time
+- preview before posting: view multiple images based on your text prompt, then choose the best to post (coming soon)
+- option to keep prompts private from other users (coming soon)
+- more to come
+
+### Stripe Webhooks
+
+When a user buys a PRO subscription, an event is sent from Stripe to a webhook endpoint on the AIrtist API. This triggers the 2 transactions (via Gelato Relay) to deploy an NFT contract for the user and to increase the stream to `30 pAInt` per month. Additionally, as an "upgrade bonus", `10 pAInt` are airdropped to the PRO user's Safe at the time of the upgrade. From this point forward, the user's image are minted to their own contract/collection, which contains only their own artwork.
+
+When a PRO subscription is cancelled, another event webhook automatically triggers a transaction to reduce the stream back to `3 pAInt` per month and flip the user back to minting on the shared NFT contract.
+

@@ -672,7 +672,7 @@ api.post("/api/mint", getAuth, async function (req, res) {
                 });
             }
         } else {
-            return res.json({"result": "error", "error": "insifficient funds", "balances": balances});
+            return res.json({"result": "error", "error": "insufficient funds", "balances": balances});
         }
 
     } else {

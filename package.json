@@ -14,5 +14,8 @@
     "ethers": "^5.7.2",
     "hardhat": "^2.13.0",
     "mocha": "^10.2.0"
+  },
+  "dependencies": {
+    "@axelar-network/axelar-gmp-sdk-solidity": "^3.3.0"
   }
 }

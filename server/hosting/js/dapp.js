@@ -795,6 +795,12 @@ $( document ).ready(function() {
     $( "#feed-posts, #story-modal" ).on( "click", ".mint", async function(e) {
         e.preventDefault();
         console.log("mint!");
+        if (loggedInUser) {
+            if (loggedInUser.safeDeployed == false) {
+                alert("You have not minted any of your own art yet! Before you can mint other's art, please use the POST button to create some art and check the option to mint it.");
+                return false;
+            }
+        }
         var data = {};
         data.id = $(this).data('id');
         mint(data);

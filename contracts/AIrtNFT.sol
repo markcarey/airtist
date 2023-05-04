@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import {ERC2771ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol";
@@ -12,7 +13,7 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
-contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, AccessControlUpgradeable, ERC2771ContextUpgradeable {
+contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, AccessControlUpgradeable, OwnableUpgradeable, ERC2771ContextUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using SafeERC20 for IERC20;
 
@@ -25,13 +26,14 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
        _disableInitializers();
     }
 
-    function initialize(string calldata _name, string calldata _symbol, address _owner) initializer public {
+    function initialize(string calldata _name, string calldata _symbol, address _admin, address _owner) initializer public {
         __ERC721_init(_name, _symbol);
         __ERC721Burnable_init();
         __AccessControl_init();
         pAInt = IERC20(0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A);
-        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
-        _grantRole(MINTER_ROLE, _owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(MINTER_ROLE, _admin);
+        _transferOwnership(_owner);
     }
 
     function _baseURI() internal view override returns (string memory) {

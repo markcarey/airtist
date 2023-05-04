@@ -5,7 +5,7 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 interface IAIrtNFT {
-    function initialize(string calldata _name, string calldata _symbol, address _owner) external;
+    function initialize(string calldata _name, string calldata _symbol, address _admin, address _owner) external;
 }
 
 contract AIrtNFTFactory is ERC2771Context {
@@ -21,9 +21,9 @@ contract AIrtNFTFactory is ERC2771Context {
     );
 
     // @dev deploys a AIrtNFT contract
-    function createAIrtNFT(string calldata _name, string calldata _symbol) external returns (address) {
+    function createAIrtNFT(string calldata _name, string calldata _symbol, address owner) external returns (address) {
         address clone = Clones.clone(tokenImplementation);
-        IAIrtNFT(clone).initialize(_name, _symbol, _msgSender());
+        IAIrtNFT(clone).initialize(_name, _symbol, _msgSender(), owner);
         emit AIrtNFTCreated(_msgSender(), clone);
         return clone;
     }

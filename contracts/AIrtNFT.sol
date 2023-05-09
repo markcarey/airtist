@@ -18,6 +18,7 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
     using SafeERC20 for IERC20;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant TRANSPORTER_ROLE = keccak256("TRANSPORTER_ROLE");
     CountersUpgradeable.Counter private _tokenIdCounter;
     IERC20 public pAInt;
 
@@ -53,11 +54,11 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
         _artMint(to);
     }
 
-    function depart(uint256 tokenId) public onlyRole(MINTER_ROLE) {
+    function depart(uint256 tokenId) public onlyRole(TRANSPORTER_ROLE) {
         _burn(tokenId);
     }
 
-    function arrive(address to, uint256 tokenId) public onlyRole(MINTER_ROLE) {
+    function arrive(address to, uint256 tokenId) public onlyRole(TRANSPORTER_ROLE) {
         require(_exists(tokenId) == false, "!already exists");
         _safeMint(to, tokenId);
     }

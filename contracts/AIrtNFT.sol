@@ -53,6 +53,15 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
         _artMint(to);
     }
 
+    function depart(uint256 tokenId) public onlyRole(MINTER_ROLE) {
+        _burn(tokenId);
+    }
+
+    function arrive(address to, uint256 tokenId) public onlyRole(MINTER_ROLE) {
+        require(_exists(tokenId) == false, "!already exists");
+        _safeMint(to, tokenId);
+    }
+
     function _artMint(address to) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();

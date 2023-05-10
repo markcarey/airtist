@@ -30,6 +30,7 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
     function initialize(address gateway_, address gasReceiver_) public virtual initializer {
         gateway = IAxelarGateway(gateway_);
         gasReceiver = IAxelarGasService(gasReceiver_);
+        _grantRole(TRANSPORTER_ROLE, _msgSender());
     }
 
     function depart(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external onlyRole(TRANSPORTER_ROLE) {

@@ -34,6 +34,7 @@ contract AIrtNFT is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable,
         pAInt = IERC20(0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(MINTER_ROLE, _admin);
+        _grantRole(TRANSPORTER_ROLE, _admin);
         _transferOwnership(_owner);
     }
 

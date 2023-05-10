@@ -22,7 +22,8 @@ contract AIrtNFTFactory is ERC2771Context {
 
     // @dev deploys a AIrtNFT contract
     function createAIrtNFT(string calldata _name, string calldata _symbol, address owner) external returns (address) {
-        address clone = Clones.clone(tokenImplementation);
+        bytes32 salt = keccak256(abi.encode(_name, _symbol, owner));
+        address clone = Clones.cloneDeterministic(tokenImplementation, salt);
         IAIrtNFT(clone).initialize(_name, _symbol, _msgSender(), owner);
         emit AIrtNFTCreated(_msgSender(), clone);
         return clone;

@@ -31,6 +31,7 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
         gateway = IAxelarGateway(gateway_);
         gasReceiver = IAxelarGasService(gasReceiver_);
         _grantRole(TRANSPORTER_ROLE, _msgSender());
+        _grantRole(TRANSPORTER_ROLE, address(this));
     }
 
     function depart(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external onlyRole(TRANSPORTER_ROLE) {
@@ -92,7 +93,8 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
         uint256 amount
     ) internal virtual {}
 
-    function _execute(string memory sourceChain, string memory sourceAddress, bytes calldata payload) internal virtual {
+    function _execute(string memory, string memory sourceAddress, bytes calldata payload) internal virtual {
+        require( hasRole(TRANSPORTER_ROLE, sourceAddress.toAddress()), "!untrusted source" );
         (address nftAddress, address to, uint256 tokenId) = abi.decode(payload, (address, address, uint256));
         IERC721Transportable(nftAddress).arrive(to, tokenId);
     }

@@ -7,7 +7,7 @@ require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-web3");
 //require("@nomiclabs/hardhat-waffle");
 require("@nomicfoundation/hardhat-chai-matchers");
-const { API_URL_GOERLI, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
+const { API_URL_GOERLI, API_URL_OPTIGOERLI, API_URL_ARBIGOERLI, PRIVATE_KEY, ETHERSCAN_API_KEY, OPTISCAN_API_KEY, ARBISCAN_API_KEY } = process.env;
 
 module.exports = {
   solidity: {
@@ -51,11 +51,27 @@ module.exports = {
       gasMultiplier: 10,
       gasPrice: 1000000000 * 10,
       blockGasLimit: 0x1fffffffffffff
-    }
+    },
+    arbitrumGoerli: {
+      url: API_URL_ARBIGOERLI,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gasMultiplier: 10,
+      gasPrice: 1000000000 * 10,
+      blockGasLimit: 0x1fffffffffffff
+    },
+    optimisticGoerli: {
+      url: API_URL_OPTIGOERLI,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gasMultiplier: 10,
+      gasPrice: 1000000000 * 10,
+      blockGasLimit: 0x1fffffffffffff
+    },
   },
    etherscan: {
     apiKey: {
-      goerli: ETHERSCAN_API_KEY
+      goerli: ETHERSCAN_API_KEY,
+      optimisticGoerli: OPTISCAN_API_KEY,
+      arbitrumGoerli: ARBISCAN_API_KEY,
     }
   }
 }

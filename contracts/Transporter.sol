@@ -34,7 +34,7 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
         _grantRole(TRANSPORTER_ROLE, address(this));
     }
 
-    function depart(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external onlyRole(TRANSPORTER_ROLE) {
+    function send(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external onlyRole(TRANSPORTER_ROLE) {
         IERC721Transportable(nftAddress).depart(tokenId);
         bytes memory payload = abi.encode(nftAddress, to, tokenId);
         gasReceiver.payNativeGasForContractCall{ value: fee }(
@@ -47,6 +47,7 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
         gateway.callContract(chainName, address(this).toString(), payload);
     }
 
+    // receive
     function execute(
         bytes32 commandId,
         string calldata sourceChain,

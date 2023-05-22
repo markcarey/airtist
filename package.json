@@ -16,6 +16,7 @@
     "mocha": "^10.2.0"
   },
   "dependencies": {
-    "@axelar-network/axelar-gmp-sdk-solidity": "^3.3.0"
+    "@axelar-network/axelar-gmp-sdk-solidity": "^3.3.0",
+    "@axelar-network/axelarjs-sdk": "^0.12.7"
   }
 }

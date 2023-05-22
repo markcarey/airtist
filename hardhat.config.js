@@ -49,7 +49,7 @@ module.exports = {
       url: API_URL_GOERLI,
       accounts: [`0x${PRIVATE_KEY}`],
       gasMultiplier: 10,
-      gasPrice: 1000000000 * 10,
+      gasPrice: 1000000000 * 50,
       blockGasLimit: 0x1fffffffffffff
     },
     arbitrumGoerli: {

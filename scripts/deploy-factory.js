@@ -8,7 +8,8 @@ async function main() {
     const MyContract = await ethers.getContractFactory("AIrtNFTFactory");
  
     // Start deployment, returning a promise that resolves to a contract object
-    const myContract = await MyContract.deploy(implementation); // Instance of the contract 
+    //const myContract = await MyContract.deploy(implementation); // Instance of the contract 
+    const myContract = await MyContract.deploy(); // Instance of the contract 
     console.log("Contract deployed to address:", myContract.address);
     console.log(`npx hardhat verify --network ${chain} ${myContract.address} ${implementation}`);
  }

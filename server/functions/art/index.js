@@ -14,6 +14,7 @@ const { ethers } = require("ethers");
 
 const nftJSON = require(__base + 'art/AIrtNFT.json');
 const factoryJSON = require(__base + 'art/AIrtNFTFactory.json');
+const transporterJSON = require(__base + 'art/Transporter.json');
 
 const safeCoreSDK = require('@safe-global/safe-core-sdk');
 const Safe = safeCoreSDK.default;
@@ -36,10 +37,13 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-const provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
+var provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
 var providers = [];
 providers[0] = provider;
+providers[1] = new ethers.providers.JsonRpcProvider({"url": API_URL_OPTIGOERLI});
+providers[2] = new ethers.providers.JsonRpcProvider({"url": API_URL_ARBIGOERLI});
 var signer;
+
 var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + process.env.RPC_ETH});
 
 const jwksSocial = 'https://api.openlogin.com/jwks';
@@ -51,6 +55,18 @@ const THIRTY_PER_MONTH = "11415525114150"; // flowRate per second for 30 monthly
 const sleep = (milliseconds) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
 };
+
+function switchProvider(chain) {
+    if (chain == 5 || chain == "ethereum-2") {
+        provider = providers[0];
+    } else if (chain == 420 || chain == "optimism") {
+        provider = providers[1];
+    } else if (chain == 421613 || chain == "arbitrum") {
+        provider = providers[2];
+    } else {
+        console.log(`switchProvider() unknown chain ${chain}`);
+    }
+}
 
 function getContracts(pk, provider) {
     signer = new ethers.Wallet(pk, provider);

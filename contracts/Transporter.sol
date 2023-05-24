@@ -27,14 +27,14 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
        _disableInitializers();
     }
 
-    function initialize(address gateway_, address gasReceiver_) public virtual initializer {
+    function initialize(address gateway_, address gasReceiver_, address _admin) public virtual initializer {
         gateway = IAxelarGateway(gateway_);
         gasReceiver = IAxelarGasService(gasReceiver_);
-        _grantRole(TRANSPORTER_ROLE, _msgSender());
+        _grantRole(TRANSPORTER_ROLE, _admin);
         _grantRole(TRANSPORTER_ROLE, address(this));
     }
 
-    function send(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external onlyRole(TRANSPORTER_ROLE) {
+    function send(address nftAddress, address to, uint256 tokenId, string memory chainName, uint256 fee) external payable onlyRole(TRANSPORTER_ROLE) {
         IERC721Transportable(nftAddress).depart(tokenId);
         bytes memory payload = abi.encode(nftAddress, to, tokenId);
         gasReceiver.payNativeGasForContractCall{ value: fee }(
@@ -99,6 +99,12 @@ contract Transporter is Initializable, IAxelarExecutable, AccessControlUpgradeab
         (address nftAddress, address to, uint256 tokenId) = abi.decode(payload, (address, address, uint256));
         IERC721Transportable(nftAddress).arrive(to, tokenId);
     }
+
+    function withdraw() external onlyRole(TRANSPORTER_ROLE) {
+        payable(_msgSender()).transfer(address(this).balance);
+    }
+
+    receive() external payable {}
 
     // The following functions are overrides required by Solidity.
 

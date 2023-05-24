@@ -9,7 +9,7 @@ interface IAIrtNFT {
     function initialize(string calldata _name, string calldata _symbol, address _admin, address _owner) external;
 }
 interface ITransporter {
-    function initialize(address gateway_, address gasReceiver_) external;
+    function initialize(address gateway_, address gasReceiver_, address _admin) external;
 }
 
 contract AIrtNFTFactory is Initializable, ERC2771Context {
@@ -48,7 +48,7 @@ contract AIrtNFTFactory is Initializable, ERC2771Context {
     function createTransporter(address gateway_, address gasReceiver_, string calldata _salt) external returns (address) {
         bytes32 salt = keccak256(abi.encode(_salt));
         address clone = Clones.cloneDeterministic(transporterImplementation, salt);
-        ITransporter(clone).initialize(gateway_, gasReceiver_);
+        ITransporter(clone).initialize(gateway_, gasReceiver_, _msgSender());
         emit TransporterCreated(_msgSender(), clone);
         return clone;
     }

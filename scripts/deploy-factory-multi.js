@@ -37,9 +37,9 @@ addr.optimisticGoerli = {
 };
 
 const nftImplementation = "0x0dE9fAC898137E253D16BCabA2a29AA61b1F041A";  // goerli, optiGoerli, arbiGoerli
-const transporterImplementation = "0x64b3e93B978b0c6eEDc64cCB455Ba6EC9fAE167B";  // goerli, optiGoerli, arbiGoerli
+const transporterImplementation = "0x7d1911DF8c66dc08060CF81469F9EC37bb711D8E";  // goerli, optiGoerli, arbiGoerli
 
-const v = "three";
+const v = "five";
 const salt = ethers.utils.formatBytes32String(v);
 
 //const pHash = ethers.utils.solidityKeccak256(["bytes"],[p]);

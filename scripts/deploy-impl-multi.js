@@ -39,7 +39,7 @@ addr.optimisticGoerli = {
     "multi": "0x81419C008dc810B6fa4c81D19D44e5D9820dF3C5"
 };
 
-const v = "three";
+const v = "five";
 const salt = ethers.utils.formatBytes32String(v);
 
 //const pHash = ethers.utils.solidityKeccak256(["bytes"],[p]);
@@ -83,7 +83,7 @@ async function main() {
             fees.push("0");
         } else {
             chainNames.push(addr[thisChain].name);
-            const gasFee = await sdk.estimateGasFee(addr[chain].name, addr[thisChain].name, addr[chain].gasToken, 3000000);
+            const gasFee = await sdk.estimateGasFee(addr[chain].name, addr[thisChain].name, addr[chain].gasToken, 3000000, 1.2);
             fees.push("" + gasFee);
             totalFee += parseInt(gasFee);
         }

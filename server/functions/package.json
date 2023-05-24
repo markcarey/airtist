@@ -13,6 +13,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@axelar-network/axelarjs-sdk": "^0.12.7",
     "@gelatonetwork/relay-sdk": "^3.5.0",
     "@gnosis.pm/safe-core-sdk": "^3.1.1",
     "@gnosis.pm/safe-ethers-lib": "^1.6.1",

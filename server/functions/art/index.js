@@ -29,6 +29,11 @@ const relayAdapter = new GelatoRelayAdapter(process.env.GELATO_API_KEY);
 const GelatoRelaySDK = require("@gelatonetwork/relay-sdk");
 const relay = new GelatoRelaySDK.GelatoRelay();
 
+const axelarSDK = require("@axelar-network/axelarjs-sdk");
+const axelar = new axelarSDK.AxelarQueryAPI({
+    environment: "testnet",
+});
+
 const fetch = require('node-fetch');
 
 const { Configuration, OpenAIApi } = require("openai");
@@ -45,6 +50,11 @@ providers[0] = provider;
 providers[1] = new ethers.providers.JsonRpcProvider({"url": API_URL_OPTIGOERLI});
 providers[2] = new ethers.providers.JsonRpcProvider({"url": API_URL_ARBIGOERLI});
 var signer;
+
+var chainNames = [];
+chainNames[5] = "ethereum-2";
+chainNames[420] = "optimism";
+chainNames[421613] = "arbitrum";
 
 var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + process.env.RPC_ETH});
 
@@ -288,6 +298,77 @@ async function getBalances(user) {
     });
 }
 
+async function transportNFT(doc, post) {
+    return new Promise(async (resolve, reject) => {
+        var chain = post.mintChain;
+        if (chain == post.chain) {
+            resolve(1);
+        } else {
+            // send txn inputs:
+            const fromChain = chainNames[post.chain];
+            const toChain = chainNames[chain];
+            const nftAddress = post.nftContract;
+            const tokenId = post.tokenId;
+            // TODO: need Safe address!!!
+            const minterAddress = post.minterAddress ? post.minterAddress : post.user;
+            const userRef = db.collection('users').doc(minterAddress);
+            const userDoc = await userRef.get();
+            var to;
+            if (userDoc.exists) {
+                const minter = userDoc.data();
+                if ("safeAddress" in minter) {
+                    to = minter.safeAddress;
+                } else {
+                    // TODO: deploy Safe (or queue deployment for later)
+                }
+            } else {
+                console.log(`user ${minterAddress} not found`);
+            }
+            if (!to) {
+                resolve(1);
+            }
+            const fee = await axelar.estimateGasFee(fromChain, toChain, "ETH", 200000, 1.2);
+            console.log(`transport fee is ${fee}`);
+
+            switchProvider(chain);
+            const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
+            const transporter = new ethers.Contract(process.env.TRANSPORTER, transporterJSON.abi, signer);
+            const txn = await transporter.populateTransaction.send(nftAddress, to, tokenId, toChain, fee);
+            console.log(txn.data);
+            const network = await provider.getNetwork();
+            const request = {
+                "chainId": network.chainId,
+                "target": process.env.TRANSPORTER,
+                "data": txn.data,
+                "user": await signer.getAddress()
+            };
+            console.log("request", request);
+            const relayResponse = await relay.sponsoredCallERC2771(
+                request,
+                signer,
+                process.env.GELATO_API_KEY
+            );
+            console.log(relayResponse, JSON.stringify(relayResponse));
+            if ("taskId" in relayResponse) {
+                await postDoc.ref.update({
+                    "transportStatus": "pending"
+                });
+                const notificationDoc = await userDoc.collection('notifications').add({
+                    "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                    "link": `https://airtist.xyz/p/${post.id}`,
+                    "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                    "text": `Transport has started for `,
+                    "textLink": post.title ? post.title : "this post"
+                });
+                resolve(1);
+            } else {
+                console.log("error: relay error", JSON.stringify(relayResponse));
+                reject(relayResponse);
+            }
+        }
+    });
+}
+
 async function generate(prompt, id) {
     return new Promise(async (resolve, reject) => {
       const aiResponse = await openai.createImage({
@@ -429,7 +510,7 @@ api.post("/api/post", getAuth, async function (req, res) {
     data.type = req.q.type;
     data.selfmint = req.q.selfmint;
     data.mintable = req.q.mintable;
-    data.chain = req.q.chain ? req.q.chain : defaultChainId;
+    data.mintChain = req.q.mintchain ? req.q.mintchain : defaultChainId;
     data.user = req.user.address;
     data.name = req.user.name ? req.user.name: '';
     data.profileImage = req.user.profileImage ? req.user.profileImage : '';
@@ -671,7 +752,8 @@ api.post("/api/mint", getAuth, async function (req, res) {
                     "mintTaskId": relayResponse.taskId,
                     "minterAddress": user.address,
                     "nftContract": nftAddress.toLowerCase(),
-                    "minterChain": chain
+                    "chain": defaultChainId,
+                    "mintChain": chain
                 });
                 const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
@@ -1230,7 +1312,7 @@ module.exports.cronMint = async function(context) {
                                         });
                                         var notifyCreator = true;
                                         if ("minterAddress" in post) {
-                                            if (post.minterChain == defaultChainId) {
+                                            if (post.mintChain == post.chain) {
                                                 const minterNotification = await db.collection('users').doc(post.minterAddress.toLowerCase()).collection('notifications').add({
                                                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
                                                     "link": `https://testnets.opensea.io/assets/goerli/${post.nftContract}/${post.tokenId}`,
@@ -1240,7 +1322,7 @@ module.exports.cronMint = async function(context) {
                                                 });
                                             } else {
                                                 // TODO: transport needed
-                                                
+                                                await transportNFT(doc, post);
                                             }
                                             if (post.minterAddress.toLowerCase() == post.user.toLowerCase()) {
                                                 notifyCreator = false;

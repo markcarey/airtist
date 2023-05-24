@@ -37,6 +37,8 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+const defaultChainId = 5; // Goerli
+
 var provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
 var providers = [];
 providers[0] = provider;
@@ -427,6 +429,7 @@ api.post("/api/post", getAuth, async function (req, res) {
     data.type = req.q.type;
     data.selfmint = req.q.selfmint;
     data.mintable = req.q.mintable;
+    data.chain = req.q.chain ? req.q.chain : defaultChainId;
     data.user = req.user.address;
     data.name = req.user.name ? req.user.name: '';
     data.profileImage = req.user.profileImage ? req.user.profileImage : '';
@@ -586,6 +589,8 @@ api.post("/api/mint", getAuth, async function (req, res) {
     const user = req.user;
     const balances = await getBalances(user);
     var id = req.q.id;
+    var chain = req.q.chain ? req.q.chain : defaultChainId;
+    // TODO: look up minter's preferred chain in settings?
     const docRef = db.collection('posts').doc(id);
     const postDoc = await docRef.get();
     if (postDoc.exists) {
@@ -665,7 +670,8 @@ api.post("/api/mint", getAuth, async function (req, res) {
                     "mintStatus": "pending",
                     "mintTaskId": relayResponse.taskId,
                     "minterAddress": user.address,
-                    "nftContract": nftAddress.toLowerCase()
+                    "nftContract": nftAddress.toLowerCase(),
+                    "minterChain": chain
                 });
                 const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
@@ -1224,13 +1230,18 @@ module.exports.cronMint = async function(context) {
                                         });
                                         var notifyCreator = true;
                                         if ("minterAddress" in post) {
-                                            const minterNotification = await db.collection('users').doc(post.minterAddress.toLowerCase()).collection('notifications').add({
-                                                "image": `https://api.airtist.xyz/images/${post.id}.png`,
-                                                "link": `https://testnets.opensea.io/assets/goerli/${post.nftContract}/${post.tokenId}`,
-                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
-                                                "text": `Minting has completed. `,
-                                                "textLink": "View on Opensea"
-                                            });
+                                            if (post.minterChain == defaultChainId) {
+                                                const minterNotification = await db.collection('users').doc(post.minterAddress.toLowerCase()).collection('notifications').add({
+                                                    "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                                                    "link": `https://testnets.opensea.io/assets/goerli/${post.nftContract}/${post.tokenId}`,
+                                                    "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                                    "text": `Minting has completed. `,
+                                                    "textLink": "View on Opensea"
+                                                });
+                                            } else {
+                                                // TODO: transport needed
+                                                
+                                            }
                                             if (post.minterAddress.toLowerCase() == post.user.toLowerCase()) {
                                                 notifyCreator = false;
                                             }

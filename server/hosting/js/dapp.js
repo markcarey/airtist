@@ -803,6 +803,8 @@ $( document ).ready(function() {
         }
         var data = {};
         data.id = $(this).data('id');
+        // TODO: temp for testing, CHANGE THIS!!
+        data.chain = 420;
         mint(data);
         $(this).find('i').css("color", "red");
         $(this).find(".mint-button-text").text(" Minting...");

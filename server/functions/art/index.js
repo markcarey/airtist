@@ -47,8 +47,8 @@ const defaultChainId = 5; // Goerli
 var provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
 var providers = [];
 providers[0] = provider;
-providers[1] = new ethers.providers.JsonRpcProvider({"url": API_URL_OPTIGOERLI});
-providers[2] = new ethers.providers.JsonRpcProvider({"url": API_URL_ARBIGOERLI});
+providers[1] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_OPTIGOERLI});
+providers[2] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_ARBIGOERLI});
 var signer;
 
 var chainNames = [];

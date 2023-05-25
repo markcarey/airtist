@@ -966,6 +966,13 @@ function getFeedPostHTML(data) {
             <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (1 pAInt)</span></div>
         </a>
         `;
+        data.mintLabel = `Mint (1 pAInt)`;
+        const dropDown = mintDropDownHTML(data);
+        mintHTML = `
+        <a href="#" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
+            ${dropDown}
+        </a>
+        `;
     }
     if ("mintStatus" in data) {
         if (data.mintStatus == "pending") {

@@ -19,6 +19,11 @@ var users = {};
 var loggedInUser;
 var balances = {};
 
+var openSeaSlugs = [];
+openSeaSlugs[5] = "goerli";
+openSeaSlugs[420] = "optimism-goerli";
+openSeaSlugs[421613] = "arbitrum-goerli";
+
 var currencies = {
     "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A": "pAInt",
     "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6": "WETH"
@@ -725,6 +730,8 @@ $( document ).ready(function() {
         data.price = $("#price").val();
         data.currency = $("#currency").val();
         console.log("art data", data);
+        // TODO: temp for testing, CHANGE THIS!!
+        data.mintchain = 421613;
         postArt(data);
         return false;
     });

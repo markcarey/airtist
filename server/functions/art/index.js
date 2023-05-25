@@ -307,8 +307,11 @@ async function transportNFT(doc, post) {
             const toChain = chainNames[chain];
             const nftAddress = post.nftContract;
             const tokenId = post.tokenId;
-            // TODO: need Safe address!!!
-            const minterAddress = post.minterAddress ? post.minterAddress : post.user;
+            var minterAddress = post.user;
+            if ("minterAddress" in post) {
+                minterAddress = post.minterAddress;
+            }
+            console.log("minterAddress", minterAddress);
             const userRef = db.collection('users').doc(minterAddress);
             const userDoc = await userRef.get();
             var to;
@@ -1111,7 +1114,8 @@ module.exports.newPost = async function(postDoc, context) {
                     await postDoc.ref.update({
                         "mintStatus": "pending",
                         "mintTaskId": relayResponse.taskId,
-                        "nftContract": nftAddress.toLowerCase()
+                        "nftContract": nftAddress.toLowerCase(),
+                        "chain": defaultChainId
                     });
                     const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
                         "image": `https://api.airtist.xyz/images/${post.id}.png`,
@@ -1170,7 +1174,8 @@ module.exports.newPost = async function(postDoc, context) {
                     await postDoc.ref.update({
                         "mintStatus": "pending",
                         "mintTaskId": relayResponse.taskId,
-                        "nftContract": nftAddress.toLowerCase()
+                        "nftContract": nftAddress.toLowerCase(),
+                        "chain": defaultChainId
                     });
                 } else {
                     console.log("error: relay error", JSON.stringify(relayResponse));
@@ -1323,11 +1328,16 @@ module.exports.cronMint = async function(context) {
                                                     "textLink": "View on Opensea"
                                                 });
                                             } else {
-                                                // TODO: transport needed
                                                 await transportNFT(doc, post);
                                             }
                                             if (post.minterAddress.toLowerCase() == post.user.toLowerCase()) {
                                                 notifyCreator = false;
+                                            }
+                                        } else {
+                                            if (post.mintChain == post.chain) {
+                                                // noop
+                                            } else {
+                                                await transportNFT(doc, post);
                                             }
                                         }
                                         if (notifyCreator) {
@@ -1340,12 +1350,14 @@ module.exports.cronMint = async function(context) {
                                             });
                                         }
                                         const creatorDoc = await db.collection('users').doc(post.user).get();
-                                        const minterDoc = await db.collection('users').doc(post.minterAddress).get();
                                         if (creatorDoc.exists) {
                                             await getBalances(creatorDoc.data());
                                         }
-                                        if (minterDoc.exists) {
-                                            await getBalances(minterDoc.data());
+                                        if ("minterAddress" in post) {
+                                            const minterDoc = await db.collection('users').doc(post.minterAddress).get();
+                                            if (minterDoc.exists) {
+                                                await getBalances(minterDoc.data());
+                                            }
                                         }
                                     }
                                 }

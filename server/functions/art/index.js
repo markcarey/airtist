@@ -358,7 +358,7 @@ async function transportNFT(doc, post) {
                     "transportStatus": "pending",
                     "transportTaskId": relayResponse.taskId
                 });
-                const notificationDoc = await userDoc.collection('notifications').add({
+                const notificationDoc = await userDoc.ref.collection('notifications').add({
                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
                     "link": `https://airtist.xyz/p/${post.id}`,
                     "timestamp": firebase.firestore.FieldValue.serverTimestamp(),

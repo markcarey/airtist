@@ -901,8 +901,8 @@ $( document ).ready(function() {
         const target = $(this).data("target");
         $(".settings-tab").hide();
         $(`.settings-${target}`).show();
-        $(".settings-tab-link").parent("ul").removeClass("uk-active");
-        $(this).parent("ul").addClass("uk-active");
+        $(".settings-tab-link").parent("li").removeClass("uk-active");
+        $(this).parent("li").addClass("uk-active");
         return false;
     });
 

@@ -1,22 +1,21 @@
-# AIrtist
+# AxelART
 
 ## A platform for creating, sharing, and minting AI art
 
-AIrtist is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on the blockchain.
+AxelART is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on multiple chains, powered by Axelar.
+![example post](https://axelart.xyz/assets/images/demo/airtist-example-small.png)
 
-![example post](https://airtist.xyz/assets/images/demo/airtist-example-small.png)
-
-AIrtist uses "account abstraction" to make it seamless for users, without needing wallets nor gas tokens to get started. Even when minting NFTs, users never have to "send transactions", "sign messages", nor write down 12- or 24-word phrases on pieces of paper.
+AxelART uses "account abstraction" to make it seamless for users, without needing wallets nor gas tokens to get started. Even when minting NFTs, users never have to "send transactions", "sign messages", nor write down 12- or 24-word phrases on pieces of paper.
 
 ## Quick Links
 
- - Try it now: https://airtist.xyz (minting on Goerli testnet)
+ - Try it now: https://axelart.xyz (minting on Goerli testnet)
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
 
 ## Signup and Login
 
-Using web3Auth, AIrtist login options include social, email, or wallet. Social/email logins will generate an app-specific private key … behind the scenes, no seed phrase needed – only the user has access to the [complete private key](https://web3auth.io/docs/infrastructure/key-management) (self-custody), enabled by Multi-Party Computation (MPC).
+Using web3Auth, AxelART login options include social, email, or wallet. Social/email logins will generate an app-specific private key … behind the scenes, no seed phrase needed – only the user has access to the [complete private key](https://web3auth.io/docs/infrastructure/key-management) (self-custody), enabled by Multi-Party Computation (MPC).
 
 Social login users:
 - do not need a wallet
@@ -26,7 +25,7 @@ Social login users:
 
 ### ENS Name Support
 
-Note that when choosing the `wallet` login option, AIrtist checks for an ENS name for the connecting address, and if found, will use that as the "name" of the user on AIrtist. For example, if I choose to login via web3auth using my primary Metamask address, AIrtist will show me as `markcarey.eth`.
+Note that when choosing the `wallet` login option, AxelART checks for an ENS name for the connecting address, and if found, will use that as the "name" of the user on AxelART. For example, if I choose to login via web3auth using my primary Metamask address, AxelART will show me as `markcarey.eth`.
 
 ## Web 2.0 Features
 
@@ -49,32 +48,32 @@ Creators can always decide later -- after posting -- to mint their own images.
 
 Minting during art creation is done by toggling a checkbox. For images already posted, minting involves a single click/tap. In both cases, the user does not have to send transactions nor sign messages.
 
-![minted](https://airtist.xyz/assets/images/demo/airtist-opensea-small.png)
+![minted](https://axelart.xyz/assets/images/demo/airtist-opensea-small.png)
 
 ### The pAInt Super Token
 
 When minting your own artwork, it costs `1 pAInt` token. When minting images posted by others, you pay the price set by the creator, denominated in either `pAInt` or `WETH`.
 
-`pAInt` is a native Super Token that supports real-time streaming, powered by Superfluid. It acts as a utility token on the AIrtist platform for minting NFTs. Users start with `5 pAInt` and after their first mint, active users receive `3 pAInt` per month, streamed in real-time.
+`pAInt` is a native Super Token that supports real-time streaming, powered by Superfluid. It acts as a utility token on the AxelART platform for minting NFTs. Users start with `5 pAInt` and after their first mint, active users receive `3 pAInt` per month, streamed in real-time.
 
 See the streams on [Superfluid Console](https://console.superfluid.finance/goerli/accounts/0x83D4A49b80Af1CE060361A457a02d057560A9aD9?tab=streams). It's like watching paint stream.😐
 
-![pAInt stream](https://airtist.xyz/assets/images/demo/airtist-stream.gif)
+![pAInt stream](https://axelart.xyz/assets/images/demo/airtist-stream.gif)
 
 ### The First Mint - Behind the Scenes
 
 When the user decides to mint their first NFT -- and not before -- on-chain transactions are triggered, behind the scenes:
 
-1. *A Safe smart wallet is deployed.* This is a “1 of 3” multi-signature Safe. The user’s web3auth-generated address has full access as 1 of the 3 owners. The second owner is a AIrtist Hot wallet enabling behind-the-scenes Safe transactions on the behalf of the user. The third owner is a AIrtist cold wallet for emergency/recovery purposes.
+1. *A Safe smart wallet is deployed.* This is a “1 of 3” multi-signature Safe. The user’s web3auth-generated address has full access as 1 of the 3 owners. The second owner is a AxelART Hot wallet enabling behind-the-scenes Safe transactions on the behalf of the user. The third owner is a AxelART cold wallet for emergency/recovery purposes.
 2. ERC20 Approval transactions are sent from the Safe to facilitate the first and future mints.
 3. Sent via Gelato Relay, a transaction is sent to start streaming `3 pAInt` per month to the Safe.
-4. Also via Gelato Relay, the minting transaction is sent to mint the NFT to the shared AIrtist NFT contract.
+4. Also via Gelato Relay, the minting transaction is sent to mint the NFT to the shared AxelART NFT contract.
 
 Remember, the above 4 transactions happen *behind the scenes*. From the user's perspective _all they did was check a box or tap a link_.
 
 #### Gelato Relay Sponsored ERC2771 Calls
 
-AIrtist uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AIrtist's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the three contracts deployed by AIrtist support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AIrtist but relayed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permissions to restrict functions to authorized signers.
+AxelART uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AxelART's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the three contracts deployed by AxelART support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AxelART but relayed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permissions to restrict functions to authorized signers.
 
 ### Subsequent NFT Minting
 
@@ -82,21 +81,21 @@ Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to m
 
 #### Selling NFTs without a Deployed Safe to receive Payment?
 
-*Scenario:* a creator has joined AIrtist and posted several images, but has not minted any yet. But the creator has enabled minting of the posts, and set prices and currencies (`pAInt` or `WETH`) in each case. What happens when another user decides to mint these images? How does the creator get paid, when no Safe has (yet) be deployed for the creator? As mentioned above, the Safe is only deployed when the user does _their_ first mint, and not before. Even though the Safe has not been deployed, the creator still gets paid! When the creator joined AIrtist, the Safe SDK is used to accurately _predict_ the user's Safe address, _even though it has not yet been deployed_. This predicted Safe address is assigned to creator's user account, and when `pAInt` or `WETH` gets sent to that address, it just works, and the funds are [owned by the predicted Safe address](https://blog.openzeppelin.com/getting-the-most-out-of-create2/). When/if the creator triggers their first mint, the Safe will then be deployed to the predicted address and the creator will have full access to the tokens sent previously.
+*Scenario:* a creator has joined AxelART and posted several images, but has not minted any yet. But the creator has enabled minting of the posts, and set prices and currencies (`pAInt` or `WETH`) in each case. What happens when another user decides to mint these images? How does the creator get paid, when no Safe has (yet) be deployed for the creator? As mentioned above, the Safe is only deployed when the user does _their_ first mint, and not before. Even though the Safe has not been deployed, the creator still gets paid! When the creator joined AxelART, the Safe SDK is used to accurately _predict_ the user's Safe address, _even though it has not yet been deployed_. This predicted Safe address is assigned to creator's user account, and when `pAInt` or `WETH` gets sent to that address, it just works, and the funds are [owned by the predicted Safe address](https://blog.openzeppelin.com/getting-the-most-out-of-create2/). When/if the creator triggers their first mint, the Safe will then be deployed to the predicted address and the creator will have full access to the tokens sent previously.
 
-## AIrtist PRO
+## AxelART PRO
 
 Since we are sponsoring -- paying the gas for -- users' transactions, using `pAInt` as a utility token helps limit the gas costs associated with users on the FREE plan. These users receive `3 pAInt` monthly, streamed in real-time.
 
-For serious AIrtists, minting 3 NFTs per month may not be enough.
+For serious AxelARTs, minting 3 NFTs per month may not be enough.
 
-AIrtist uses a _freemium_ business model, where cloud-computing and gas costs are subsidized (sponsored) for FREE users, while revenue from PRO users more than offsets those costs.
+AxelART uses a _freemium_ business model, where cloud-computing and gas costs are subsidized (sponsored) for FREE users, while revenue from PRO users more than offsets those costs.
 
-AIrtist PRO is a monthly subscription powered by Stripe Billing. Consistent with the goal of account abstraction, PRO users pay via credit card recurring billing (with future plans to add support for crypto-native billing options).
+AxelART PRO is a monthly subscription powered by Stripe Billing. Consistent with the goal of account abstraction, PRO users pay via credit card recurring billing (with future plans to add support for crypto-native billing options).
 
-### AIrtist PRO Features
+### AxelART PRO Features
 
-- a dedicated NFT contract for each PRO user (deployed from the AIrtist Factory contract via Gelato Relay)
+- a dedicated NFT contract for each PRO user (deployed from the AxelART Factory contract via Gelato Relay)
 - increased stream, now `30 pAInt` streamed monthly in real-time
 - preview before posting: view multiple images based on your text prompt, then choose the best to post (coming soon)
 - option to keep prompts private from other users (coming soon)
@@ -104,13 +103,13 @@ AIrtist PRO is a monthly subscription powered by Stripe Billing. Consistent with
 
 ### Stripe Webhooks
 
-When a user buys a PRO subscription, an event is sent from Stripe to a webhook endpoint on the AIrtist API. This triggers the 2 transactions (via Gelato Relay) to deploy an NFT contract for the user and to increase the stream to `30 pAInt` per month. Additionally, as an "upgrade bonus", `10 pAInt` are airdropped to the PRO user's Safe at the time of the upgrade. From this point forward, the user's images are minted to their own contract/collection, which contains only their own artwork.
+When a user buys a PRO subscription, an event is sent from Stripe to a webhook endpoint on the AxelART API. This triggers the 2 transactions (via Gelato Relay) to deploy an NFT contract for the user and to increase the stream to `30 pAInt` per month. Additionally, as an "upgrade bonus", `10 pAInt` are airdropped to the PRO user's Safe at the time of the upgrade. From this point forward, the user's images are minted to their own contract/collection, which contains only their own artwork.
 
 When a PRO subscription is cancelled, another event webhook automatically triggers a transaction to reduce the stream back to `3 pAInt` per month and flip the user back to minting on the shared NFT contract.
 
 ## How it was Built
 
-There are three main categories of code for AIrtist:
+There are three main categories of code for AxelART:
 
 - Frontend Client App
 - Server APIs and Datastore
@@ -118,33 +117,33 @@ There are three main categories of code for AIrtist:
 
 ### Frontend Client App
 
-The live demo of the front end AIrtist app is located at https://airtist.xyz. The app includes javascript code that primarily interfaces with AIrtist server API endpoints.
+The live demo of the front end AxelART app is located at https://axelart.xyz. The app includes javascript code that primarily interfaces with AxelART server API endpoints.
 
-The javascript web3auth SDK is used in the frontend to power all forms of authentication. Using web3 auth, the user can choose to login with social apps (ie. Twitter/Facebook), email, or wallet (ie. Metamask/WalletConnect). The web3auth SDK interfaces with the nodes in the [Auth Network](https://medium.com/toruslabs/introducing-the-auth-network-b8fab1b5e1f6) to produce an app-specific private key for the user. The private key exists only in the browser and it never sent to AIrtist servers nor saved by any third party. The web3auth SDK also produced a JWT auth token, that is used by AIrtist as an API key when calling authenticated AIrtist API endpoints (see more below).
+The javascript web3auth SDK is used in the frontend to power all forms of authentication. Using web3 auth, the user can choose to login with social apps (ie. Twitter/Facebook), email, or wallet (ie. Metamask/WalletConnect). The web3auth SDK interfaces with the nodes in the [Auth Network](https://medium.com/toruslabs/introducing-the-auth-network-b8fab1b5e1f6) to produce an app-specific private key for the user. The private key exists only in the browser and it never sent to AxelART servers nor saved by any third party. The web3auth SDK also produced a JWT auth token, that is used by AxelART as an API key when calling authenticated AxelART API endpoints (see more below).
 
-The frontend uses the Firebase Firestore SDK to fetch and render AIrtist data stored in a Firestore data store: data about users, posts, followers, social reactions, etc.
+The frontend uses the Firebase Firestore SDK to fetch and render AxelART data stored in a Firestore data store: data about users, posts, followers, social reactions, etc.
 
-The HTML and CSS of the AIrtist frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
+The HTML and CSS of the AxelART frontend was built using the Instello Ultimate Photo Sharing HTML Template set, used under license.
 
 The frontend is hosted using Firebase Hosting. The frontend code can be found in the repo at [server/hosting/](server/hosting/).
 
 ### Server APIs and Datastore
 
-AIrtist uses three core services from Google Firebase for server-side functions.
+AxelART uses three core services from Google Firebase for server-side functions.
 
 - *Firestore*. Data about users and posts are store in a noSQL Firestore datastore.
 - *Storage*. Once images have been generated via OpenAI SDK, they are stored using Firebase Storage (Google Cloud Storage)
 - *Firebase Functions* There are three types of serverless functions.
-  - The first is an HTTPS function that handles requests to the AIrtist API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts.
+  - The first is an HTTPS function that handles requests to the AxelART API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts.
   - Next there are several functions that are triggered by adding or updating data in the Firestore database, which in turn may trigger interactions with the Safe and Gelato SDKs to execute functions onchain.
   - Finally, there are two "cron" functions that run periodically. These poll the Gelato Relay API for the status of transactions that have been relayed to Gelato. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and relevant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
 
 ### Ethereum Smart Contracts
 
-Three smart contracts were written in Solidity for AIrtist:
+Three smart contracts were written in Solidity for AxelART:
 
 - `AIrtNFT.sol` - This is an `ERC721` NFT smart contract, leveraging OpenZeppelin contracts. A notable inclusion is the support for `ERC2771Context` which enables secure permission-based function calls via Gelato Relay. Also added are two minting functions which power minting of new images, collecting and transferring `pAInt` or `WETH` tokens when necessary.
-- `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` contract. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AIrtist NFT!_.
+- `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` contract. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AxelART NFT!_.
 - `Streamer.sol` - This contract uses the Superfluid protocol to enable streaming of the `pAInt` utility token, which was also deployed by this contract at deployment time. The core function of the streamer contract enables the starting, updating or stopping of a `pAInt` stream to a recipient, while optionally dropping some `pAInt` immediately (not streamed). 
 
 #### Deployed Contracts (Goerli Testnet)
@@ -163,7 +162,7 @@ Here are some quick links to code in this repo, including some examples of where
 
 - [Contracts](contracts/)
 - [Frontend](server/hosting/)
-- [AIrtist API](server/functions/art/index.js#L396)
+- [AxelART API](server/functions/art/index.js#L396)
 - [Server cron functions](server/functions/art/index.js#L1178)
 - [Server DB Triggers](server/functions/art/index.js#L920)
 - web3auth SDK: [client](server/hosting/js/dapp.js#L55), [server-side JWT verification](server/functions/art/index.js#L318)
@@ -185,7 +184,7 @@ Here are some quick links to code in this repo, including some examples of where
 
 ## Links
 
- - Try it now: https://airtist.xyz (minting on Goerli testnet)
+ - Try it now: https://axelart.xyz (minting on Goerli testnet)
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
 
@@ -196,4 +195,4 @@ Here are some quick links to code in this repo, including some examples of where
 - Discord: @markcarey#5670
 - Github: @markcarey
 
-![grid](https://airtist.xyz/assets/images/demo/airtist-grid-small.png)
+![grid](https://axelart.xyz/assets/images/demo/airtist-grid-small.png)

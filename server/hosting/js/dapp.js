@@ -42,7 +42,6 @@ if (path[2]) {
     idForPage = path[2];
 }
 
-
 let web3auth = null;
 let provider = null;
 
@@ -834,7 +833,7 @@ $( document ).ready(function() {
     });
 
     $(".upgrade-page").click(function(){
-        window.location = `https://airtist.xyz/upgrade/`;
+        window.location = `https://axelart.xyz/upgrade/`;
         return false;
     });
 
@@ -901,7 +900,7 @@ $( document ).ready(function() {
             $(".btn-logged-in").hide();
             $(".btn-logged-out").show();
             //navigateTo("feed");
-            window.location = 'https://airtist.xyz';
+            window.location = 'https://axelart.xyz';
         } catch (error) {
             console.error(error.message);
         }
@@ -1459,7 +1458,7 @@ function getNotificationHTML(data) {
     var html = '';
     var target = "";
     if ("link" in data) {
-        if ( data.link.includes("airtist") ) {
+        if ( data.link.includes("airtist") || data.link.includes("axelart") ) {
             target = "";
         } else {
             target = "_blank";
@@ -1496,6 +1495,50 @@ function getLoadMoreHTML(data) {
             Load more ..</a>
     </div>
     `;
+}
+
+function mintDropDownHTML(data) {
+    var html = '';
+    html = `
+    <div>
+        <a href="#" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
+        </a>
+        <a href="#" aria-expanded="false" class=""> <i
+                class="uil-wallet text-2xl hover:bg-gray-200 rounded-full mr-1 transition dark:hover:bg-gray-701"></i>
+            Mint</a>
+        <div class="bg-white w-56 shadow-md mx-auto p-2 mt-12 rounded-md text-gray-500 hidden text-base border border-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 uk-drop uk-drop-top-right"
+            uk-drop="mode: hover;pos: top-right">
+
+            <ul class="space-y-1">
+                <li>
+                    <a href="#" data-id="${data.id}" data-mintchain="5"
+                        class="mint flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-800">
+                        <img
+                            src="https://goerli.etherscan.io/images/svg/brands/ethereum-original.svg" class="chain-icon" /> Ethereum
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-id="${data.id}" data-mintchain="420"
+                        class="mint flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-800">
+                        <img
+                            src="https://goerli-optimism.etherscan.io/images/svg/brands/main.svg" class="chain-icon" />
+                        Optimisim
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-id="${data.id}" data-mintchain="421613"
+                        class="mint flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-800">
+                        <img
+                            src="https://goerli.arbiscan.io/images/svg/brands/arbitrum.svg" class="chain-icon" /> Arbitrum
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+    `;
+    return html;
 }
 
 function openseaIcon() {

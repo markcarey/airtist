@@ -900,9 +900,9 @@ $( document ).ready(function() {
     $(".settings-tab-link").click(function(){
         const target = $(this).data("target");
         $(".settings-tab").hide();
-        $(`settings-${target}`).show();
-        $(".settings-tab-link").removeClass("uk-active");
-        $(this).addClass("uk-active");
+        $(`.settings-${target}`).show();
+        $(".settings-tab-link").parent("ul").removeClass("uk-active");
+        $(this).parent("ul").addClass("uk-active");
         return false;
     });
 

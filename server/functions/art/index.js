@@ -59,6 +59,11 @@ chainNames[5] = "ethereum-2";
 chainNames[420] = "optimism";
 chainNames[421613] = "arbitrum";
 
+var openSeaSlugs = [];
+openSeaSlugs[5] = "goerli";
+openSeaSlugs[420] = "optimism-goerli";
+openSeaSlugs[421613] = "arbitrum-goerli";
+
 var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + process.env.RPC_ETH});
 
 const transporterAddress = process.env.TRANSPORTER;
@@ -72,18 +77,6 @@ const THIRTY_PER_MONTH = "11415525114150"; // flowRate per second for 30 monthly
 const sleep = (milliseconds) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
 };
-
-function switchProvider(chain) {
-    if (chain == 5 || chain == "ethereum-2") {
-        provider = providers[0];
-    } else if (chain == 420 || chain == "optimism") {
-        provider = providers[1];
-    } else if (chain == 421613 || chain == "arbitrum") {
-        provider = providers[2];
-    } else {
-        console.log(`switchProvider() unknown chain ${chain}`);
-    }
-}
 
 function getContracts(pk, provider) {
     signer = new ethers.Wallet(pk, provider);
@@ -1383,8 +1376,24 @@ module.exports.cronTransport = async function(context) {
                 if ("transportTransactionHash" in post) {
                     // TODO: use txnHash to check Axelar GMP status
                     const txHash = post.transportTransactionHash;
-                    const axelarStatus = await sdk.queryTransactionStatus(txHash);
+                    const axelarStatus = await axelarGMP.queryTransactionStatus(txHash);
                     console.log('axelar status', JSON.stringify(axelarStatus));
+                    if (axelarStatus.status == "destination_executed") {
+                        await doc.ref.update({
+                            "transportStatus": "transported",
+                            "transportArrivalTransactionHash": axelarStatus.executed.transactionHash,
+                            "chain": post.mintChain
+                        });
+                        const minterAddress = post.minterAddress ? post.minterAddress : post.user;
+                        const slug = openSeaSlugs[post.mintChain];
+                        const creatorNotification = await db.collection('users').doc(minterAddressr).collection('notifications').add({
+                            "image": `https://api.airtist.xyz/images/${post.id}.png`,
+                            "link": `https://testnets.opensea.io/assets/${slug}/${post.nftContract}/${post.tokenId}`,
+                            "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                            "text": `Your post has been transported. `,
+                            "textLink": "View on Opensea"
+                        });
+                    }
                 } else {
                     if ("transportTaskId" in post) {
                         const task = await relay.getTaskStatus(post.transportTaskId);

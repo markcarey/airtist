@@ -815,8 +815,8 @@ $( document ).ready(function() {
         }
         mint(data);
         $(this).find('i').css("color", "red");
-        $(this).parents('.mint-drop').addClass("hidden");
-        $(this).$(this).parents('.mint-link').find(".mint-button-text").text(" Minting...");
+        $(this).parents('.mint-drop').addClass("hidden").hide();
+        $(this).parents('.mint-link').find(".mint-button-text").text(" Minting...");
         return false;
     });
 

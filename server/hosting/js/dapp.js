@@ -934,6 +934,13 @@ function getFeedPostHTML(data) {
         <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (1 pAInt)</span></div>
     </a>
     `;
+    data.mintLabel = `Mint (1 pAInt)`;
+    const drop = mintDropDownHTML(data);
+    mintHTML = `
+    <a href="#" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
+        ${drop}
+    </a>
+    `;
     if (data.minted) {
         var slug = `goerli`;
         if ("chain" in data) {

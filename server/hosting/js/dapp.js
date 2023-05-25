@@ -150,6 +150,9 @@ async function loadUserProfile () {
                     if ("location" in meta) {
                         $("#location").val(meta.location);
                     }
+                    if ("chain" in meta) {
+                        $("#user-chain").val(meta.chain);
+                    }
                     if (currentPage == "profile") {
                         if (!idForPage) {
                             loadProfile(meta.address);

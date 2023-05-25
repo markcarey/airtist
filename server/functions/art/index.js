@@ -328,7 +328,7 @@ async function transportNFT(doc, post) {
             if (!to) {
                 resolve(1);
             }
-            const fee = await axelar.estimateGasFee(fromChain, toChain, "ETH", 200000, 1.2);
+            const fee = await axelar.estimateGasFee(fromChain, toChain, "ETH", 200000, 1.4);
             console.log(`transport fee is ${fee}`);
 
             //switchProvider(chain);
@@ -1398,7 +1398,7 @@ module.exports.cronTransport = async function(context) {
                         });
                         const minterAddress = post.minterAddress ? post.minterAddress : post.user;
                         const slug = openSeaSlugs[post.mintChain];
-                        const creatorNotification = await db.collection('users').doc(minterAddressr).collection('notifications').add({
+                        const creatorNotification = await db.collection('users').doc(minterAddress).collection('notifications').add({
                             "image": `https://api.airtist.xyz/images/${post.id}.png`,
                             "link": `https://testnets.opensea.io/assets/${slug}/${post.nftContract}/${post.tokenId}`,
                             "timestamp": firebase.firestore.FieldValue.serverTimestamp(),

@@ -418,7 +418,7 @@
 
           </div>
 
-          <div class="settings-tab settings-nft grid lg:grid-cols-3 mt-12 gap-8 hidden">
+          <div class="settings-tab settings-nft grid lg:grid-cols-3 mt-12 gap-8" style="display: none;">
             <div>
                 <h3 class="text-xl mb-2"> NFT Minting</h3>
                 <p> Preferences for minting NFTs (optional)</p>
@@ -426,6 +426,18 @@
             <div class="bg-white rounded-md lg:shadow-lg shadow col-span-2">
 
                <div class="grid grid-cols-2 gap-3 lg:p-6 p-4">
+
+                  <div class="col-span-2">
+                    <label for=""> Mint NFTs On </label>
+                    <select id="user-chain" name="user_chain"  class="shadow-none bg-gray-100">
+                        <option value="5">Ethereum</option>
+                        <option value="420">Optimism</option>
+                        <option value="421613">Arbitrum</option>
+                        <option value="5">Avalanche (coming soon)</option>
+                        <option value="5">BNB Chain (coming soon)</option>
+                        <option value="5">Polygon (coming soon)</option>
+                   </select>
+                  </div>
                   <div class="col-span-2">
                       <label for="name"> Name</label>
                       <input id="name" name="name" type="text" placeholder="Your name.." class="shadow-none bg-gray-100">

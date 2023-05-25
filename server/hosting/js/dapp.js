@@ -809,11 +809,14 @@ $( document ).ready(function() {
         }
         var data = {};
         data.id = $(this).data('id');
-        // TODO: temp for testing, CHANGE THIS!!
-        data.chain = 420;
+        data.chain = $(this).data('mintchain');
+        if (!data.chain) {
+            data.chain = 5;
+        }
         mint(data);
         $(this).find('i').css("color", "red");
-        $(this).find(".mint-button-text").text(" Minting...");
+        $(this).parents('.mint-drop').addClass("hidden");
+        $(this).$(this).parents('.mint-link').find(".mint-button-text").text(" Minting...");
         return false;
     });
 
@@ -925,6 +928,7 @@ function getFeedPostHTML(data) {
         data.currency = "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A";
     }
     const coin = data.currency ? data.currency : "0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A"; 
+    data.coin = coin;
     var mintHTML = `
     <a href="#" data-id="${data.id}" data-user="${data.user}" class="mint nomint flex items-center space-x-2 flex-1 justify-end" style="display: none;">
         <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (1 pAInt)</span></div>
@@ -942,6 +946,13 @@ function getFeedPostHTML(data) {
         mintHTML = `
         <a href="#" data-id="${data.id}" class="mint flex items-center space-x-2 flex-1 justify-end">
             <div><i class="uil-wallet mr-1" style="font-size: 130%;"></i><span class="mint-button-text">Mint (${data.price} ${currencies[coin]})</span></div>
+        </a>
+        `;
+        data.mintLabel = `Mint (${data.price} ${currencies[coin]})`;
+        const dropDown = mintDropDownHTML(data);
+        mintHTML = `
+        <a href="#" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
+            ${dropDown}
         </a>
         `;
     } else if (loggedInUser && (loggedInUser.address.toLowerCase() == data.user.toLowerCase())) {
@@ -1500,13 +1511,13 @@ function getLoadMoreHTML(data) {
 function mintDropDownHTML(data) {
     var html = '';
     html = `
-    <div>
+    <div class="mint-link">
         <a href="#" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
         </a>
         <a href="#" aria-expanded="false" class=""> <i
                 class="uil-wallet text-2xl hover:bg-gray-200 rounded-full mr-1 transition dark:hover:bg-gray-701"></i>
-            Mint</a>
-        <div class="bg-white w-56 shadow-md mx-auto p-2 mt-12 rounded-md text-gray-500 hidden text-base border border-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 uk-drop uk-drop-top-right"
+                <span class="mint-button-text">${data.mintLabel}</span></a>
+        <div class="mint-drop bg-white w-56 shadow-md mx-auto p-2 mt-12 rounded-md text-gray-500 hidden text-base border border-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 uk-drop uk-drop-top-right"
             uk-drop="mode: hover;pos: top-right">
 
             <ul class="space-y-1">

@@ -46,9 +46,9 @@ const defaultChainId = 5; // Goerli
 
 var provider = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
 var providers = [];
-providers[0] = provider;
-providers[1] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_OPTIGOERLI});
-providers[2] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_ARBIGOERLI});
+providers[5] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_GOERLI});
+providers[420] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_OPTIGOERLI});
+providers[421613] = new ethers.providers.JsonRpcProvider({"url": process.env.API_URL_ARBIGOERLI});
 var signer;
 
 var chainNames = [];
@@ -57,6 +57,8 @@ chainNames[420] = "optimism";
 chainNames[421613] = "arbitrum";
 
 var ensProvider = new ethers.providers.JsonRpcProvider({"url": "https://" + process.env.RPC_ETH});
+
+const transporterAddress = process.env.TRANSPORTER;
 
 const jwksSocial = 'https://api.openlogin.com/jwks';
 const jwksExternal = 'https://authjs.web3auth.io/jwks';
@@ -330,15 +332,18 @@ async function transportNFT(doc, post) {
             const fee = await axelar.estimateGasFee(fromChain, toChain, "ETH", 200000, 1.2);
             console.log(`transport fee is ${fee}`);
 
-            switchProvider(chain);
+            //switchProvider(chain);
             const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
-            const transporter = new ethers.Contract(process.env.TRANSPORTER, transporterJSON.abi, signer);
+            console.log("transporterAddress", transporterAddress);
+            const transporter = new ethers.Contract(transporterAddress, transporterJSON.abi, signer);
+            console.log(nftAddress, to, tokenId, toChain, fee);
             const txn = await transporter.populateTransaction.send(nftAddress, to, tokenId, toChain, fee);
             console.log(txn.data);
             const network = await provider.getNetwork();
+            console.log(network);
             const request = {
                 "chainId": network.chainId,
-                "target": process.env.TRANSPORTER,
+                "target": transporterAddress,
                 "data": txn.data,
                 "user": await signer.getAddress()
             };
@@ -350,8 +355,9 @@ async function transportNFT(doc, post) {
             );
             console.log(relayResponse, JSON.stringify(relayResponse));
             if ("taskId" in relayResponse) {
-                await postDoc.ref.update({
-                    "transportStatus": "pending"
+                await doc.ref.update({
+                    "transportStatus": "pending",
+                    "transportTaskId": relayResponse.taskId
                 });
                 const notificationDoc = await userDoc.collection('notifications').add({
                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
@@ -1350,12 +1356,50 @@ module.exports.cronMint = async function(context) {
                             }
 
                         }
+                    } else if (task.taskState == "Cancelled") {
+                        await doc.ref.update({
+                            "mintStatus": "cancelled"
+                        });
                     }
                 }
             });
         });
 
 } // cronMint
+
+module.exports.cronTransport = async function(context) {
+    console.log('This will be run every 1 minutes!');
+    // 1. check mintTasks
+    db.collection("posts").where("transportStatus", "==", "pending")
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach(async (doc) => {
+                const post = doc.data();
+                post.id = doc.id;
+                console.log("post", doc.id, JSON.stringify(post));
+                if ("transportTransactionHash" in post) {
+                    // TODO: use txnHash to check Axelar GMP status
+                } else {
+                    if ("transportTaskId" in post) {
+                        const task = await relay.getTaskStatus(post.transportTaskId);
+                        console.log("transportTask status", JSON.stringify(task));
+                        if (task.taskState == "ExecSuccess") {
+                            if ("transactionHash" in task) {
+                                await doc.ref.update({
+                                    "transportTransactionHash": task.transactionHash,
+                                });
+                            }
+                        } else if (task.taskState == "Cancelled") {
+                            await doc.ref.update({
+                                "transportStatus": "cancelled"
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+} // cronTransport
 
 module.exports.cronDeploy = async function(context) {
     console.log('This will be run every 2 minutes!');

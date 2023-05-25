@@ -29,9 +29,13 @@ exports.artUpdateUser = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).fires
     return art.updateUser(change, context);
 });
 
-exports.artCronMint = functions.pubsub.schedule('every 1 minutes').onRun((context) => {
+exports.artCronMint = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).pubsub.schedule('every 1 minutes').onRun((context) => {
     return art.cronMint(context);
 }); // artCronMint
+
+exports.artCronTransport = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).pubsub.schedule('every 5 minutes').onRun((context) => {
+    return art.cronTransport(context);
+}); // artCronTransport
 
 exports.artCronDeploy = functions.pubsub.schedule('every 2 minutes').onRun((context) => {
     return art.cronDeploy(context);

@@ -897,6 +897,15 @@ $( document ).ready(function() {
         $("#notification-count").hide();
     });
 
+    $(".settings-tab-link").click(function(){
+        const target = $(this).data("target");
+        $(".settings-tab").hide();
+        $(`settings-${target}`).show();
+        $(".settings-tab-link").removeClass("uk-active");
+        $(this).addClass("uk-active");
+        return false;
+    });
+
     $(".logout").click(async function (event) {
         try {
             await web3auth.logout();

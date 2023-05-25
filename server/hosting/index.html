@@ -374,10 +374,11 @@
 
           <h1 class="text-2xl leading-none text-gray-900 tracking-tight mt-3"> Settings </h1>
           <ul class="mt-5 -mr-3 flex-nowrap lg:overflow-hidden overflow-x-scroll uk-tab">
-              <li class="uk-active"><a href="#">Profile</a></li>
+              <li class="uk-active"><a href="#" class="settings-tab-link" data-target="profile">Profile</a></li>
+              <li class=""><a href="#" class="settings-tab-link" data-target="nft">NFT Minting</a></li>
           </ul>
 
-          <div class="grid lg:grid-cols-3 mt-12 gap-8">
+          <div class="settings-tab settings-profile grid lg:grid-cols-3 mt-12 gap-8">
               <div>
                   <h3 class="text-xl mb-2"> Profile Info</h3>
                   <p> Add info to your profile (optional)</p>
@@ -416,6 +417,46 @@
               </div>
 
           </div>
+
+          <div class="settings-tab settings-nft grid lg:grid-cols-3 mt-12 gap-8 hidden">
+            <div>
+                <h3 class="text-xl mb-2"> NFT Minting</h3>
+                <p> Preferences for minting NFTs (optional)</p>
+            </div>
+            <div class="bg-white rounded-md lg:shadow-lg shadow col-span-2">
+
+               <div class="grid grid-cols-2 gap-3 lg:p-6 p-4">
+                  <div class="col-span-2">
+                      <label for="name"> Name</label>
+                      <input id="name" name="name" type="text" placeholder="Your name.." class="shadow-none bg-gray-100">
+                  </div>
+                  <div class="col-span-2">
+                      <label for="image"> Profile Image URL</label>
+                      <input id="image" name="image" type="text" placeholder="https://.." class="shadow-none bg-gray-100">
+                  </div>
+                    <div class="col-span-2">
+                        <label for="email"> Email</label>
+                        <input id="email" name="email" type="email" placeholder="Your email.." class="shadow-none bg-gray-100">
+                    </div>
+                    <div class="col-span-2">
+                        <label for="about">About me</label>  
+                        <textarea id="about" name="about" rows="3"  class="shadow-none bg-gray-100"></textarea>
+                    </div> 
+                    <div class="col-span-2">
+                        <label for="location"> Location</label>
+                        <input id="location" name="location" type="text" placeholder="" class="shadow-none bg-gray-100">
+                    </div>
+               </div> 
+
+               <div class="bg-gray-10 p-6 pt-0 flex justify-end space-x-3">
+                   <button class="p-2 px-4 rounded bg-gray-50 text-red-500"> Cancel </button>
+                   <button id="save-profile" type="button" class="button bg-blue-700"> Save </button>
+                   <button type="button" class="upgrade-page button bg-blue-700"> Upgrade </button>
+               </div>
+
+            </div>
+
+        </div>
 
       </div>
 
@@ -586,7 +627,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
-    <script src="/js/dapp.js?v=219"></script>
+    <script src="/js/dapp.js?v=220"></script>
 
 </body>
 

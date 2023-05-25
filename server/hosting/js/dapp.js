@@ -935,7 +935,10 @@ function getFeedPostHTML(data) {
     </a>
     `;
     if (data.minted) {
-        const slug = openSeaSlugs[data.chain];
+        var slug = `goerli`;
+        if ("chain" in data) {
+            slug = openSeaSlugs[data.chain];
+        }
         mintHTML = `
         <a href="https://testnets.opensea.io/assets/${slug}/${data.nftContract}/${data.tokenId}" target="_blank" data-id="${data.id}" class="flex items-center space-x-2 flex-1 justify-end">
             <div>
@@ -1328,7 +1331,10 @@ function getModalHTML(data) {
     </a>
     `;
     if (data.minted) {
-        const slug = openSeaSlugs[data.chain];
+        var slug = `goerli`;
+        if ("chain" in data) {
+            slug = openSeaSlugs[data.chain];
+        }
         mintHTML = `
         <a href="https://testnets.opensea.io/assets/${slug}/${data.nftContract}/${data.tokenId}" target="_blank" data-id="${data.id}" class="flex items-center space-x-4">
             <div class="flex font-bold items-baseline">${icon}</div>

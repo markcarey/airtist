@@ -515,7 +515,10 @@ api.post("/api/post", getAuth, async function (req, res) {
     data.type = req.q.type;
     data.selfmint = req.q.selfmint;
     data.mintable = req.q.mintable;
-    data.mintChain = req.q.mintchain ? req.q.mintchain : defaultChainId;
+    data.mintChain = req.user.chain ? req.user.chain : defaultChainId;
+    if ("mintchain" in req.q) {
+        data.mintChain = req.q.mintchain;
+    }
     data.user = req.user.address;
     data.name = req.user.name ? req.user.name: '';
     data.profileImage = req.user.profileImage ? req.user.profileImage : '';
@@ -657,6 +660,14 @@ api.post("/api/profile", getAuth, async function (req, res) {
     }
     await db.collection('users').doc(req.user.address).update(data);
     return res.json({"result": "ok", "message": "Profile data saved"});
+});
+
+api.post("/api/nftsettings", getAuth, async function (req, res) {
+    const data = {
+        "chain": req.q.userchain,
+    }
+    await db.collection('users').doc(req.user.address).update(data);
+    return res.json({"result": "ok", "message": "NFT settings saved"});
 });
 
 api.get("/api/balances", getAuth, async function (req, res) {

@@ -613,6 +613,17 @@ function updateFollowButtons() {
     }    
 }
 
+async function saveNFT(data) {
+    const headers = await getHeaders();
+    const res = await fetch('/api/nftsettings', { 
+        method: 'POST', 
+        headers: new Headers(headers), 
+        body: JSON.stringify(data)
+    });
+    var result = await res.json();
+    $("#save-chain").text("Saved");
+}
+
 function navigateTo(currentPage, idForPage) {
     if (currentPage == "feed") {
         $(".view").hide();
@@ -729,8 +740,6 @@ $( document ).ready(function() {
         data.price = $("#price").val();
         data.currency = $("#currency").val();
         console.log("art data", data);
-        // TODO: temp for testing, CHANGE THIS!!
-        data.mintchain = 421613;
         postArt(data);
         return false;
     });
@@ -903,6 +912,15 @@ $( document ).ready(function() {
         $(`.settings-${target}`).show();
         $(".settings-tab-link").parent("li").removeClass("uk-active");
         $(this).parent("li").addClass("uk-active");
+        return false;
+    });
+
+    $("#save-chain").click(function(){
+        const userChain = $("#user-chain").val();
+        var data = {};
+        data.userchain = userChain;
+        saveNFT(data);
+        $(this).text("Saving...");
         return false;
     });
 

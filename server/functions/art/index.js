@@ -33,6 +33,9 @@ const axelarSDK = require("@axelar-network/axelarjs-sdk");
 const axelar = new axelarSDK.AxelarQueryAPI({
     environment: "testnet",
 });
+const axelarGMP = new axelarSDK.AxelarGMPRecoveryAPI({
+    environment: "testnet",
+});
 
 const fetch = require('node-fetch');
 
@@ -1379,6 +1382,9 @@ module.exports.cronTransport = async function(context) {
                 console.log("post", doc.id, JSON.stringify(post));
                 if ("transportTransactionHash" in post) {
                     // TODO: use txnHash to check Axelar GMP status
+                    const txHash = post.transportTransactionHash;
+                    const axelarStatus = await sdk.queryTransactionStatus(txHash);
+                    console.log('axelar status', JSON.stringify(axelarStatus));
                 } else {
                     if ("transportTaskId" in post) {
                         const task = await relay.getTaskStatus(post.transportTaskId);

@@ -163,6 +163,13 @@ async function doApprovals(safeAddress, nftAddress) {
         // approve txn data
         const approveABI = ["function approve(address spender, uint256 amount)"];
         const pAInt = new ethers.Contract(process.env.PAINT_ADDR, approveABI, signer);
+        const allowance = await pAInt.allowance(safeAddress, nftAddress);
+        console.log("allowance", allowance);
+        if ( parseInt(allowance) > 0) {
+            console.log("already approved for this contract");
+            resolve(1);
+            return;
+        }
         const paintTxn = await pAInt.populateTransaction.approve(nftAddress, maxInt);
         console.log("paintData", paintTxn.data);
         const weth = new ethers.Contract(process.env.GOERLI_WETH, approveABI, signer);
@@ -830,6 +837,10 @@ api.post("/api/mint", getAuth, async function (req, res) {
             console.log("nftAddress", nftAddress);
             const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
             const nft = new ethers.Contract(nftAddress, nftJSON.abi, signer);
+            if (nftAddress != process.env.AIRTIST_ADDR) {
+                // check approval for this PRO contract
+                await doApprovals(user.safeAddress, nftAddress);
+            }
             var mintTxn; 
             if (user.address.toLowerCase() == post.user.toLowerCase()) {
                 mintTxn = await nft.populateTransaction.selfMint(user.safeAddress);

@@ -372,12 +372,15 @@ async function transportNFT(doc, post) {
                 if (creatorDoc.exists) {
                     const creator = creatorDoc.data();
                     if ("deployedChains" in creator) {
-                        if (creator.deployedChains.includes(chain)) {
+                        console.log("deployedChains", creator.deployedChains);
+                        if (creator.deployedChains.includes(parseInt(chain))) {
                             // target chain already deployed
+                            console.log(`already deployed to ${chain}`);
                         } else {
                             // need to deploy remote contract before transport can start
+                            console.log(`need to deploy to ${chain}`);
                             await creatorDoc.ref.update({
-                                "deployToChain": chain,
+                                "deployToChain": parseInt(chain),
                                 "transportPostId": doc.id
                             });
                             resolve(1);
@@ -387,6 +390,7 @@ async function transportNFT(doc, post) {
                 }
             }
             // send txn inputs:
+            console.log("now set tcxn inputs");
             const fromChain = chainNames[post.chain];
             const toChain = chainNames[chain];
             const nftAddress = post.nftContract;
@@ -603,6 +607,7 @@ api.post("/api/post", getAuth, async function (req, res) {
     if ("mintchain" in req.q) {
         data.mintChain = req.q.mintchain;
     }
+    data.mintChain = parseInt(data.mintChain);
     data.user = req.user.address;
     data.name = req.user.name ? req.user.name: '';
     data.profileImage = req.user.profileImage ? req.user.profileImage : '';
@@ -748,7 +753,7 @@ api.post("/api/profile", getAuth, async function (req, res) {
 
 api.post("/api/nftsettings", getAuth, async function (req, res) {
     const data = {
-        "chain": req.q.userchain,
+        "chain": parseInt(req.q.userchain),
     }
     await db.collection('users').doc(req.user.address).update(data);
     return res.json({"result": "ok", "message": "NFT settings saved"});
@@ -771,7 +776,7 @@ api.post("/api/mint", getAuth, async function (req, res) {
     const balances = await getBalances(user);
     var id = req.q.id;
     var chain = req.q.chain ? req.q.chain : defaultChainId;
-    // TODO: look up minter's preferred chain in settings?
+    chain = parseInt(chain);
     const docRef = db.collection('posts').doc(id);
     const postDoc = await docRef.get();
     if (postDoc.exists) {
@@ -853,7 +858,7 @@ api.post("/api/mint", getAuth, async function (req, res) {
                     "minterAddress": user.address,
                     "nftContract": nftAddress.toLowerCase(),
                     "chain": defaultChainId,
-                    "mintChain": chain
+                    "mintChain": parseInt(chain)
                 });
                 const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
                     "image": `https://api.airtist.xyz/images/${post.id}.png`,
@@ -1383,7 +1388,14 @@ module.exports.updateUser = async function(change, context) {
             console.log(`ERROR: trying to deploy to chain but missing data on user doc`);
             return;
         }
-        await deployNFTContract(userAfter.nftContractName, userAfter.nftContractSymbol, userAfter.safeAddress, userAfter.deployToChain);
+        const relayResponse = await deployNFTContract(userAfter.nftContractName, userAfter.nftContractSymbol, userAfter.safeAddress, userAfter.deployToChain);
+        console.log("remoteDeploy relayResponse", relayResponse);
+        var updates = {};
+        if ("taskId" in relayResponse) {
+            updates.deployStatus = "pending";
+            updates.deployTaskId = relayResponse.taskId;
+        }
+        await change.after.ref.update(updates);
     }
     return;
 } // updateUser
@@ -1495,7 +1507,7 @@ module.exports.cronTransport = async function(context) {
                         await doc.ref.update({
                             "transportStatus": "transported",
                             "transportArrivalTransactionHash": axelarStatus.executed.transactionHash,
-                            "chain": post.mintChain
+                            "chain": parseInt(post.mintChain)
                         });
                         const minterAddress = post.minterAddress ? post.minterAddress : post.user;
                         const slug = openSeaSlugs[post.mintChain];
@@ -1568,7 +1580,8 @@ module.exports.cronDeploy = async function(context) {
                                         if (task.chainId == defaultChainId) {
                                             updates.needApprovals = true;
                                         }
-                                        const relayResponse = await grantTransporterRole(event.args.nftContract.toLowerCase(), task.chainId);
+                                        const relayResponse = await grantTransporterRole(event.args.nftContract, task.chainId);
+                                        console.log("role relayResponse", relayResponse);
                                         if ("taskId" in relayResponse) {
                                             updates.roleStatus = "pending";
                                             updates.roleTaskId = relayResponse.taskId;
@@ -1584,18 +1597,6 @@ module.exports.cronDeploy = async function(context) {
                                                 "textLink": ""
                                             });
                                             await getBalances(user);
-                                        } else {
-                                            if ("transportPostId" in user) {
-                                                // now that remote deployment is done time to transport
-                                                const docRef = db.collection('posts').doc(user.transportPostId);
-                                                const postDoc = await docRef.get();
-                                                if (postDoc.exists) {
-                                                    const post = postDoc.data();
-                                                    post.id = postDoc.id;
-                                                    // TODO: grantRole to Transporter!!
-                                                    await transportNFT(doc, post);
-                                                }
-                                            }
                                         }
                                     }
                                 }
@@ -1639,12 +1640,14 @@ module.exports.cronRole = async function(context) {
                                         await doc.ref.update(updates);
                                         if ("transportPostId" in user) {
                                             // now that role granted, time to transport
+                                            console.log(`need to transport ${user.transportPostId}`);
                                             const docRef = db.collection('posts').doc(user.transportPostId);
                                             const postDoc = await docRef.get();
                                             if (postDoc.exists) {
+                                                console.log("post exists");
                                                 const post = postDoc.data();
                                                 post.id = postDoc.id;
-                                                await transportNFT(doc, post);
+                                                await transportNFT(postDoc, post);
                                             }
                                         }
                                     }

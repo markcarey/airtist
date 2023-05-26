@@ -161,7 +161,10 @@ async function doApprovals(safeAddress, nftAddress) {
         const safeSDK = await Safe.create({ "ethAdapter": ethAdapter, "safeAddress": safeAddress });
 
         // approve txn data
-        const approveABI = ["function approve(address spender, uint256 amount)"];
+        const approveABI = [
+            "function approve(address spender, uint256 amount)",
+            "function allowance(address owner, address spender)"
+        ];
         const pAInt = new ethers.Contract(process.env.PAINT_ADDR, approveABI, signer);
         const allowance = await pAInt.allowance(safeAddress, nftAddress);
         console.log("allowance", allowance);

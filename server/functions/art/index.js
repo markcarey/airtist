@@ -1453,9 +1453,10 @@ module.exports.cronDeploy = async function(context) {
                     console.log("deployTask status", JSON.stringify(task));
                     if (task.taskState == "ExecSuccess") {
                         if ("transactionHash" in task) {
-                            const tx = await provider.getTransactionReceipt(task.transactionHash);
+                            const deployProvider = providers[task.chainId];
+                            const tx = await deployProvider.getTransactionReceipt(task.transactionHash);
                             console.log("tx", JSON.stringify(tx));
-                            const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, factoryJSON.abi, provider);
+                            const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, factoryJSON.abi, deployProvider);
                             for (let i = 0; i < tx.logs.length; i++) {
                                 const log = tx.logs[i];
                                 if (log.address.toLowerCase() == process.env.AIRTIST_FACTORY.toLowerCase()) {
@@ -1463,20 +1464,32 @@ module.exports.cronDeploy = async function(context) {
                                     console.log("event", JSON.stringify(event));
                                     if (event.name == "AIrtNFTCreated") {
                                         console.log("event.args.nftContract", event.args.nftContract);
-                                        await doc.ref.update({
+                                        if ("nftContract" in user) {
+                                            // user already has their own contract -- new remote contract should match same address
+                                            if (user.nftContract != event.args.nftContract.toLowerCase()) {
+                                                console.log(`ERROR: deployed remote contract has different address from home chain`, user.nftContract, event.args.nftContract.toLowerCase());
+                                            }
+                                        }
+                                        var updates = {
                                             "nftContract": event.args.nftContract.toLowerCase(),
                                             "deployStatus": "deployed",
-                                            "needApprovals": true
-                                        });
-                                        await doc.ref.collection('notifications').add({
-                                            "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
-                                            "link": `https://airtist.xyz/`,
-                                            "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
-                                            "name": "",
-                                            "text": `Upgrade to PRO plan is complete`,
-                                            "textLink": ""
-                                        });
-                                        await getBalances(user);
+                                            "deployedChains": firebase.firestore.FieldValue.arrayUnion(task.chainId)
+                                        };
+                                        if (task.chainId == defaultChainId) {
+                                            updates.needApprovals = true;
+                                        }
+                                        await doc.ref.update(updates);
+                                        if (task.chainId == defaultChainId) {
+                                            await doc.ref.collection('notifications').add({
+                                                "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
+                                                "link": `https://airtist.xyz/`,
+                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                                "name": "",
+                                                "text": `Upgrade to PRO plan is complete`,
+                                                "textLink": ""
+                                            });
+                                            await getBalances(user);
+                                        }
                                     }
                                 }
                             }

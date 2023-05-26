@@ -198,6 +198,37 @@ async function getGelatoNonce(address) {
     });
 }
 
+async function deployNFTContract(name, symbol, safeAddress, chainId) {
+    return new Promise(async (resolve, reject) => {
+        if (!chainId) {
+            chainId = defaultChainId;
+        }
+        const deployProvider = providers[chainId];
+        const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, deployProvider);
+        //const nonce = await getGelatoNonce(await signer.getAddress());
+        //console.log("nonce", parseInt(nonce));
+        const network = await deployProvider.getNetwork();
+        const abi = factoryJSON.abi;
+        const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, abi, signer);
+        const txn = await factory.populateTransaction.createAIrtNFT(name, symbol, safeAddress);
+        console.log(txn.data);
+        const request = {
+            "chainId": network.chainId,
+            "target": process.env.AIRTIST_FACTORY,
+            "data": txn.data,
+            "user": await signer.getAddress()
+        };
+        console.log("request", request);
+        const relayResponse = await relay.sponsoredCallERC2771(
+            request,
+            signer,
+            process.env.GELATO_API_KEY
+        );
+        console.log(relayResponse, JSON.stringify(relayResponse));
+        resolve(relayResponse);
+    });
+}
+
 async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
     return new Promise(async (resolve, reject) => {
         const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
@@ -206,7 +237,7 @@ async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
         const network = await provider.getNetwork();
         const abi = factoryJSON.abi;
         const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, abi, signer);
-        const txn = await factory.populateTransaction.createAIrtNFT(name, symbol);
+        const txn = await factory.populateTransaction.createAIrtNFT(name, symbol, safeAddress);
         console.log(txn.data);
         const request = {
             "chainId": network.chainId,
@@ -249,6 +280,36 @@ async function deployNFTContractAndUpdateStream(name, symbol, safeAddress) {
         console.log(streamRelayResponse, JSON.stringify(streamRelayResponse));
 
         // return *deploy* response
+        resolve(relayResponse);
+    });
+}
+
+async function grantTransporterRole(nftAddress, chainId) {
+    const TRANSPORTER_ROLE = "0xddaa901e2fe3bda354fe0ede2785152d5c109282a613fe024a056a3e66c41bb3";
+    return new Promise(async (resolve, reject) => {
+        if (!chainId) {
+            chainId = defaultChainId;
+        }
+        const deployProvider = providers[chainId];
+        const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, deployProvider);
+        const network = await deployProvider.getNetwork();
+        const abi = nftJSON.abi;
+        const nft = new ethers.Contract(nftAddress, abi, signer);
+        const txn = await nft.populateTransaction.grantRole(TRANSPORTER_ROLE, process.env.TRANSPORTER);
+        console.log(txn.data);
+        const request = {
+            "chainId": network.chainId,
+            "target": nftAddress,
+            "data": txn.data,
+            "user": await signer.getAddress()
+        };
+        console.log("request", request);
+        const relayResponse = await relay.sponsoredCallERC2771(
+            request,
+            signer,
+            process.env.GELATO_API_KEY
+        );
+        console.log(relayResponse, JSON.stringify(relayResponse));
         resolve(relayResponse);
     });
 }
@@ -302,6 +363,29 @@ async function transportNFT(doc, post) {
         if (chain == post.chain) {
             resolve(1);
         } else {
+            // check if remote contract has been deployed (if PRO)
+            if (post.nftContract != process.env.AIRTIST_ADDR) {
+                // this is a PRO contract
+                // get creator:
+                const creatorRef = db.collection('users').doc(post.user);
+                const creatorDoc = await creatorRef.get();
+                if (creatorDoc.exists) {
+                    const creator = creatorDoc.data();
+                    if ("deployedChains" in creator) {
+                        if (creator.deployedChains.includes(chain)) {
+                            // target chain already deployed
+                        } else {
+                            // need to deploy remote contract before transport can start
+                            await creatorDoc.ref.update({
+                                "deployToChain": chain,
+                                "transportPostId": doc.id
+                            });
+                            resolve(1);
+                            return;
+                        }
+                    }
+                }
+            }
             // send txn inputs:
             const fromChain = chainNames[post.chain];
             const toChain = chainNames[chain];
@@ -1294,6 +1378,13 @@ module.exports.updateUser = async function(change, context) {
             const relayResponse = await updateStream(userAfter.safeAddress, THREE_PER_MONTH, 0);
         }
     }
+    if (userBefore.deployToChain != userAfter.deployToChain) {
+        if (!userAfter.nftContractName || !userAfter.nftContractSymbol || !userAfter.safeAddress) {
+            console.log(`ERROR: trying to deploy to chain but missing data on user doc`);
+            return;
+        }
+        await deployNFTContract(userAfter.nftContractName, userAfter.nftContractSymbol, userAfter.safeAddress, userAfter.deployToChain);
+    }
     return;
 } // updateUser
 
@@ -1397,7 +1488,6 @@ module.exports.cronTransport = async function(context) {
                 post.id = doc.id;
                 console.log("post", doc.id, JSON.stringify(post));
                 if ("transportTransactionHash" in post) {
-                    // TODO: use txnHash to check Axelar GMP status
                     const txHash = post.transportTransactionHash;
                     const axelarStatus = await axelarGMP.queryTransactionStatus(txHash);
                     console.log('axelar status', JSON.stringify(axelarStatus));
@@ -1478,6 +1568,11 @@ module.exports.cronDeploy = async function(context) {
                                         if (task.chainId == defaultChainId) {
                                             updates.needApprovals = true;
                                         }
+                                        const relayResponse = await grantTransporterRole(event.args.nftContract.toLowerCase(), task.chainId);
+                                        if ("taskId" in relayResponse) {
+                                            updates.roleStatus = "pending";
+                                            updates.roleTaskId = relayResponse.taskId;
+                                        }
                                         await doc.ref.update(updates);
                                         if (task.chainId == defaultChainId) {
                                             await doc.ref.collection('notifications').add({
@@ -1489,6 +1584,18 @@ module.exports.cronDeploy = async function(context) {
                                                 "textLink": ""
                                             });
                                             await getBalances(user);
+                                        } else {
+                                            if ("transportPostId" in user) {
+                                                // now that remote deployment is done time to transport
+                                                const docRef = db.collection('posts').doc(user.transportPostId);
+                                                const postDoc = await docRef.get();
+                                                if (postDoc.exists) {
+                                                    const post = postDoc.data();
+                                                    post.id = postDoc.id;
+                                                    // TODO: grantRole to Transporter!!
+                                                    await transportNFT(doc, post);
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1501,3 +1608,84 @@ module.exports.cronDeploy = async function(context) {
         });
 
 } // cronDeploy
+
+module.exports.cronRole = async function(context) {
+    console.log('This will be run every 2 minutes!');
+    // 1. check deployTasks
+    db.collection("users").where("roleStatus", "==", "pending")
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach(async (doc) => {
+                const user = doc.data();
+                console.log("user", doc.id, JSON.stringify(user));
+                if ("roleTaskId" in user) {
+                    const task = await relay.getTaskStatus(user.deployTaskId);
+                    console.log("deployTask status", JSON.stringify(task));
+                    if (task.taskState == "ExecSuccess") {
+                        if ("transactionHash" in task) {
+                            const deployProvider = providers[task.chainId];
+                            const tx = await deployProvider.getTransactionReceipt(task.transactionHash);
+                            console.log("tx", JSON.stringify(tx));
+                            const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, factoryJSON.abi, deployProvider);
+                            for (let i = 0; i < tx.logs.length; i++) {
+                                const log = tx.logs[i];
+                                if (log.address.toLowerCase() == process.env.AIRTIST_FACTORY.toLowerCase()) {
+                                    const event = factory.interface.parseLog(log);
+                                    console.log("event", JSON.stringify(event));
+                                    if (event.name == "AIrtNFTCreated") {
+                                        console.log("event.args.nftContract", event.args.nftContract);
+                                        if ("nftContract" in user) {
+                                            // user already has their own contract -- new remote contract should match same address
+                                            if (user.nftContract != event.args.nftContract.toLowerCase()) {
+                                                console.log(`ERROR: deployed remote contract has different address from home chain`, user.nftContract, event.args.nftContract.toLowerCase());
+                                            }
+                                        }
+                                        var updates = {
+                                            "nftContract": event.args.nftContract.toLowerCase(),
+                                            "deployStatus": "deployed",
+                                            "deployedChains": firebase.firestore.FieldValue.arrayUnion(task.chainId)
+                                        };
+                                        if (task.chainId == defaultChainId) {
+                                            updates.needApprovals = true;
+                                        }
+                                        const relayResponse = await grantTransporterRole(event.args.nftContract.toLowerCase(), task.chainId);
+                                        if ("taskId" in relayResponse) {
+                                            updates.roleStatus = "pending";
+                                            updates.roleTaskId = relayResponse.taskId;
+                                        }
+                                        await doc.ref.update(updates);
+                                        if (task.chainId == defaultChainId) {
+                                            await doc.ref.collection('notifications').add({
+                                                "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
+                                                "link": `https://airtist.xyz/`,
+                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                                                "name": "",
+                                                "text": `Upgrade to PRO plan is complete`,
+                                                "textLink": ""
+                                            });
+                                            await getBalances(user);
+                                        } else {
+                                            if ("transportPostId" in user) {
+                                                // now that remote deployment is done time to transport
+                                                const docRef = db.collection('posts').doc(user.transportPostId);
+                                                const postDoc = await docRef.get();
+                                                if (postDoc.exists) {
+                                                    const post = postDoc.data();
+                                                    post.id = postDoc.id;
+                                                    // TODO: grantRole to Transporter!!
+                                                    await transportNFT(doc, post);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            });
+        });
+
+} // cronRole
+

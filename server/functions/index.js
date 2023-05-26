@@ -37,9 +37,13 @@ exports.artCronTransport = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).pu
     return art.cronTransport(context);
 }); // artCronTransport
 
-exports.artCronDeploy = functions.pubsub.schedule('every 2 minutes').onRun((context) => {
+exports.artCronDeploy = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).pubsub.schedule('every 2 minutes').onRun((context) => {
     return art.cronDeploy(context);
 }); // artCronDeploy
+
+exports.artCronRole = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).pubsub.schedule('every 1 minutes').onRun((context) => {
+    return art.cronRole(context);
+}); // artCronRole
 
 
 

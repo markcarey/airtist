@@ -1619,62 +1619,32 @@ module.exports.cronRole = async function(context) {
                 const user = doc.data();
                 console.log("user", doc.id, JSON.stringify(user));
                 if ("roleTaskId" in user) {
-                    const task = await relay.getTaskStatus(user.deployTaskId);
-                    console.log("deployTask status", JSON.stringify(task));
+                    const task = await relay.getTaskStatus(user.roleTaskId);
+                    console.log("roleTask status", JSON.stringify(task));
                     if (task.taskState == "ExecSuccess") {
                         if ("transactionHash" in task) {
                             const deployProvider = providers[task.chainId];
                             const tx = await deployProvider.getTransactionReceipt(task.transactionHash);
                             console.log("tx", JSON.stringify(tx));
-                            const factory = new ethers.Contract(process.env.AIRTIST_FACTORY, factoryJSON.abi, deployProvider);
+                            const nft = new ethers.Contract(user.nftContract, nftJSON.abi, deployProvider);
                             for (let i = 0; i < tx.logs.length; i++) {
                                 const log = tx.logs[i];
-                                if (log.address.toLowerCase() == process.env.AIRTIST_FACTORY.toLowerCase()) {
-                                    const event = factory.interface.parseLog(log);
+                                if (log.address.toLowerCase() == user.nftContract.toLowerCase()) {
+                                    const event = nft.interface.parseLog(log);
                                     console.log("event", JSON.stringify(event));
-                                    if (event.name == "AIrtNFTCreated") {
-                                        console.log("event.args.nftContract", event.args.nftContract);
-                                        if ("nftContract" in user) {
-                                            // user already has their own contract -- new remote contract should match same address
-                                            if (user.nftContract != event.args.nftContract.toLowerCase()) {
-                                                console.log(`ERROR: deployed remote contract has different address from home chain`, user.nftContract, event.args.nftContract.toLowerCase());
-                                            }
-                                        }
+                                    if (event.name == "RoleGranted") {
                                         var updates = {
-                                            "nftContract": event.args.nftContract.toLowerCase(),
-                                            "deployStatus": "deployed",
-                                            "deployedChains": firebase.firestore.FieldValue.arrayUnion(task.chainId)
+                                            "roleStatus": "granted"
                                         };
-                                        if (task.chainId == defaultChainId) {
-                                            updates.needApprovals = true;
-                                        }
-                                        const relayResponse = await grantTransporterRole(event.args.nftContract.toLowerCase(), task.chainId);
-                                        if ("taskId" in relayResponse) {
-                                            updates.roleStatus = "pending";
-                                            updates.roleTaskId = relayResponse.taskId;
-                                        }
                                         await doc.ref.update(updates);
-                                        if (task.chainId == defaultChainId) {
-                                            await doc.ref.collection('notifications').add({
-                                                "image": user.profileImage ? user.profileImage : `https://web3-images-api.kibalabs.com/v1/accounts/${user.address}/image`,
-                                                "link": `https://airtist.xyz/`,
-                                                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
-                                                "name": "",
-                                                "text": `Upgrade to PRO plan is complete`,
-                                                "textLink": ""
-                                            });
-                                            await getBalances(user);
-                                        } else {
-                                            if ("transportPostId" in user) {
-                                                // now that remote deployment is done time to transport
-                                                const docRef = db.collection('posts').doc(user.transportPostId);
-                                                const postDoc = await docRef.get();
-                                                if (postDoc.exists) {
-                                                    const post = postDoc.data();
-                                                    post.id = postDoc.id;
-                                                    // TODO: grantRole to Transporter!!
-                                                    await transportNFT(doc, post);
-                                                }
+                                        if ("transportPostId" in user) {
+                                            // now that role granted, time to transport
+                                            const docRef = db.collection('posts').doc(user.transportPostId);
+                                            const postDoc = await docRef.get();
+                                            if (postDoc.exists) {
+                                                const post = postDoc.data();
+                                                post.id = postDoc.id;
+                                                await transportNFT(doc, post);
                                             }
                                         }
                                     }

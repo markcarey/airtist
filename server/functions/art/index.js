@@ -1164,16 +1164,21 @@ module.exports.newUser = async function(snap, context) {
 } // newUser
 
 module.exports.newOrUpdatedPost = async function(change, context) {
-    const postBefore = change.before.data();
+    var postBefore = {};
+    var isNew = false;
+    if ( change.before.exists() ) {
+        postBefore = change.before.data();
+    } else {
+        isNew = true;
+    }
+    if ( !change.after.exists() ) {
+        // deleted post
+        return;
+    }
     const postDoc = change.after;
     const post = change.after.data();
     //const post = postDoc.data();
-    var isNew = false;
     var minterAddress = "";
-    if (!postBefore.user) {
-        console.log("no user in before, so must be a new post", postBefore);
-        isNew = true;
-    }
     post.id = postDoc.id;
     var mintIt = false;
     if (isNew && post.selfmint) {

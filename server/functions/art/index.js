@@ -797,7 +797,10 @@ api.post("/api/mint", getAuth, async function (req, res) {
             await postDoc.ref.update({
                 "minterAddress": user.address,
             });
-            return;
+            return res.json({
+                "result": "ok",
+                "message": "First Mint starting soon"
+            });
         }
         var price = post.price;
         var currency = post.currency;
@@ -1166,12 +1169,12 @@ module.exports.newUser = async function(snap, context) {
 module.exports.newOrUpdatedPost = async function(change, context) {
     var postBefore = {};
     var isNew = false;
-    if ( change.before.exists() ) {
+    if ( change.before.exists ) {
         postBefore = change.before.data();
     } else {
         isNew = true;
     }
-    if ( !change.after.exists() ) {
+    if ( !change.after.exists ) {
         // deleted post
         return;
     }
@@ -1184,9 +1187,13 @@ module.exports.newOrUpdatedPost = async function(change, context) {
     if (isNew && post.selfmint) {
         mintIt = true;
         minterAddress = post.user;
-    } else if ( (postBefore.minterAddress == "") && (post.minterAddress != "") ) {
-        mintIt = true;
-        minterAddress = post.minterAddress;
+    } else if ( "minterAddress" in post ) {
+        if ( "minterAddress" in postBefore ) {
+            mintIt = false;
+        } else {
+            mintIt = true;
+            minterAddress = post.minterAddress;
+        }
     }
     console.log("mintIt is " + mintIt, JSON.stringify(post));
     if ("tokenId" in post) {

@@ -2,7 +2,7 @@
 
 ## A platform for creating, sharing, and minting AI art
 
-AxelART is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on multiple chains, powered by Axelar.
+AxelART is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on multiple chains, powered by [Axelar](https://axelar.network/).
 ![example post](https://axelart.xyz/assets/images/demo/airtist-example-small.png)
 
 AxelART uses "account abstraction" to make it seamless for users, without needing wallets nor gas tokens to get started. Even when minting NFTs, users never have to "send transactions", "sign messages", nor write down 12- or 24-word phrases on pieces of paper.
@@ -12,6 +12,54 @@ AxelART uses "account abstraction" to make it seamless for users, without needin
  - Try it now: https://axelart.xyz (minting on Goerli testnet)
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
+
+_For more details on AxelART web2 and web3 features,_ [see below](#signup-and-login)
+
+## Interchain AI Art NFTs powered by Axelar
+
+AxelART enables users to mint their own AI-generated art, or artwork created by other users. Users can mint NFTs on the chain of their choice, powered by Axelar. And thanks to Account Abstraction features powered by Gelato, user do not need a pre-existing wallet and do not need to onramp funds for gas on the desired chain/network. The goal is _interchain NFTs as easy as web2_.
+
+### Choosing a Chain
+
+Users can choose a preferred chain in their settings, which will be used when posting new AI-generated art. The live demo supports testnets for Ethereum, Optimism, and Arbitrum, buyt many more are planned for a production launch. When minting artwork posted by others, a dropdown is displayed for single-click interchain minting:
+![axelart chain chooser](https://axelart.xyz/assets/images/demo/mint-chain-chooser.png)
+
+### How to mint an Interchain NFT using AxelART
+
+- To mint your own AI-generated art: _check a box when creating your art_.
+- To mint others' art: _click on the desired chain from the dropdown_.
+
+_It's that easy_. No messages to sign, no transactions to approve, no gas required.
+
+### How AxelART Interchain NFTs Work
+
+As described above there are very few steps for the user, it is very easy to mint an AxelART NFT on any supported chain. The complexity has been abstracted away, with all the magic happening behind the scenes. 
+
+Most of the AxelART transactions are sent via Gelato Relay, an account abstraction service. For more about how AxelART uses Gelato Relay, [see below](#gelato-relay-sponsored-erc2771-calls).
+
+The other key part of the magic is General Messaging Passing (GMP) powered by Axelar, which is used to transport NFTs from one chain to another.
+
+### The Transporter Hub and Spoke Model
+
+AxelART's approach to interchain NFTs to seperate the NFT logic and the (interchain) transport logic into different contracts.  The `Transporter` contract is departure and arrival hub for multiple NFT contracts/collections. The `Transporter` deployed for AxelART is powered by Axelar, but other transporters could use other GMP solutions. 
+
+On each chain AxelART has a single "shared" NFT contract that is the default for all FREE users. Users who pay to upgrade to [PRO](#axelart-pro) get their own dedicated NFT contract. On each chain their is a _single_ `Transporter` contract that handles interchain transportation for _all_ of the NFT contracts. This hub-and-spoke model help simplify things and help minmize total _bytecode_ and thus deployment costs.
+
+#### Introducing the IERC721Transportable Interface
+
+For an NFT contract to be compatible with a Transporter, it must implement the `IERC721Transportable` interface:
+
+```interface IERC721Transportable {
+    function depart(uint256 tokenId) external;
+    function arrive(address to, uint256 tokenId) external;
+}```
+
+- the Transporter will call the `depart()` function prior to sending the NFT to another chain. Some NFT contracts will choose to burn the token prior to departure, others may transfer the token to a holding address. Some may emit an event.
+- upon arrival at the destination chain, the receiving transported will call the `arrive()` function on contract on the destination chain. Implementing the `arrive()` function would be priarliy to mint the token on the destination chain.
+- access control permissions to these is important, and could be implemented in various ways to suit the needs of the deployers
+
+
+
 
 ## Signup and Login
 
@@ -95,7 +143,8 @@ AxelART PRO is a monthly subscription powered by Stripe Billing. Consistent with
 
 ### AxelART PRO Features
 
-- a dedicated NFT contract for each PRO user (deployed from the AxelART Factory contract via Gelato Relay)
+- a dedicated NFT contract for each PRO user (deployed from the AxelART Factory contract via Gelato Relay
+- cross-chain NFT collections (PRO contract is deployed on each chain -- behind then scenes -- if/when someone want to mint on those chains)
 - increased stream, now `30 pAInt` streamed monthly in real-time
 - preview before posting: view multiple images based on your text prompt, then choose the best to post (coming soon)
 - option to keep prompts private from other users (coming soon)

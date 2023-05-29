@@ -53,7 +53,8 @@ All NFTs get sent from Transporter-to-Transporter, with the departure and arriva
 
 For an NFT contract to be compatible with a Transporter, it must implement the `IERC721Transportable` interface:
 
-```interface IERC721Transportable {
+```
+interface IERC721Transportable {
     function depart(uint256 tokenId) external;
     function arrive(address to, uint256 tokenId) external;
 }

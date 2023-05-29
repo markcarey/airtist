@@ -1585,7 +1585,7 @@ function mintDropDownHTML(data) {
                         class="mint flex items-center px-3 py-2 hover:bg-gray-200 hover:text-gray-800 rounded-md dark:hover:bg-gray-800">
                         <img
                             src="https://goerli-optimism.etherscan.io/images/svg/brands/main.svg" class="chain-icon" />
-                        Optimisim
+                        Optimism
                     </a>
                 </li>
                 <li>

@@ -56,7 +56,8 @@ For an NFT contract to be compatible with a Transporter, it must implement the `
 ```interface IERC721Transportable {
     function depart(uint256 tokenId) external;
     function arrive(address to, uint256 tokenId) external;
-}```
+}
+```
 
 - the Transporter will call the `depart()` function prior to sending the NFT to another chain. Some NFT contracts will choose to burn the token prior to departure, others may transfer the token to a holding address. Some may emit an event.
 - upon arrival at the destination chain, the receiving transported will call the `arrive()` function on contract on the destination chain. Implementing the `arrive()` function would be priarliy to mint the token on the destination chain.

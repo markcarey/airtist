@@ -22,7 +22,7 @@ AxelART enables users to mint their own AI-generated art, or artwork created by 
 ### Choosing a Chain
 
 Users can choose a preferred chain in their settings, which will be used when posting new AI-generated art. The live demo supports testnets for Ethereum, Optimism, and Arbitrum, buyt many more are planned for a production launch. When minting artwork posted by others, a dropdown is displayed for single-click interchain minting:
-![axelart chain chooser](https://axelart.xyz/assets/images/demo/mint-chain-chooser.png)
+![axelart chain chooser](https://axelart.xyz/assets/images/demo/mint-chain-chooser-small.png)
 
 ### How to mint an Interchain NFT using AxelART
 

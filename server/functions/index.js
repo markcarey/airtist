@@ -11,9 +11,9 @@ exports.artNewUser = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).firestor
     return art.newUser(snap, context);
 }); // artNewUser
 
-exports.artNewPost = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).firestore.document('posts/{id}').onCreate((snap, context) => {
-    return art.newPost(snap, context);
-}); // artNewPost
+exports.artNewOrUpdatedPost = functions.runWith({secrets: ["AIRTIST_HOT_PRIV"]}).firestore.document('posts/{id}').onWrite((change, context) => {
+    return art.newOrUpdatedPost(change, context);
+}); // artNewOrUpdatedPost
 
 exports.artNewLike = functions.firestore.document('posts/{postId}/likes/{likeId}').onCreate((snap, context) => {
     return art.newLike(snap, context);

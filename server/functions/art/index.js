@@ -792,6 +792,13 @@ api.post("/api/mint", getAuth, async function (req, res) {
     if (postDoc.exists) {
         const post = postDoc.data();
         post.id = postDoc.id;
+        if (user.safeDeployed == false) { 
+            // this a "first mint" for the minter, let the trigger handle this one
+            await postDoc.ref.update({
+                "minterAddress": user.address,
+            });
+            return;
+        }
         var price = post.price;
         var currency = post.currency;
         if (currency == "0") {
@@ -1156,20 +1163,48 @@ module.exports.newUser = async function(snap, context) {
     return;
 } // newUser
 
-module.exports.newPost = async function(postDoc, context) {
-    const post = postDoc.data();
+module.exports.newOrUpdatedPost = async function(change, context) {
+    const postBefore = change.before.data();
+    const postDoc = change.after;
+    const post = change.after.data();
+    //const post = postDoc.data();
+    var isNew = false;
+    var minterAddress = "";
+    if (!postBefore.user) {
+        console.log("no user in before, so must be a new post", postBefore);
+        isNew = true;
+    }
     post.id = postDoc.id;
-    const mintIt = post.selfmint;
+    var mintIt = false;
+    if (isNew && post.selfmint) {
+        mintIt = true;
+        minterAddress = post.user;
+    } else if ( (postBefore.minterAddress == "") && (post.minterAddress != "") ) {
+        mintIt = true;
+        minterAddress = post.minterAddress;
+    }
     console.log("mintIt is " + mintIt, JSON.stringify(post));
+    if ("tokenId" in post) {
+        mintIt = false; // just to make extra sure, TODO: adjust this when open edition feature is added
+    }
     var firstMint = false;
     if (mintIt) {
         //const postDoc = snap.ref;
         console.log('needs minting');
-        const userDoc = await db.collection('users').doc(post.user).get();
+        const userDoc = await db.collection('users').doc(minterAddress).get();
+
         if (userDoc.exists) {
-            const user = userDoc.data();
+            const user = userDoc.data();  // "user" below refers to the minting user, who may or may not be the post creator
             // check if user has deployed their own NFT contract
-            var nftAddress = user.nftContract ? user.nftContract : process.env.AIRTIST_ADDR;
+            var creator;
+            if (minterAddress != post.user) {
+                // the minter is not the creator
+                const creatorDoc = await db.collection('users').doc(post.user).get();
+                creator = creatorDoc.data();
+            } else {
+                creator = user;
+            }
+            var nftAddress = creator.nftContract ? creator.nftContract : process.env.AIRTIST_ADDR;
             const signer = new ethers.Wallet(process.env.AIRTIST_HOT_PRIV, provider);
             var doApprovalsNow = false;
             if (user.safeDeployed == false) {
@@ -1209,7 +1244,7 @@ module.exports.newPost = async function(postDoc, context) {
                 console.log("nonce", nonce);
                 // 1. relay mint for FREE
                 // Generate the target payload
-                const mintTxn = await nft.populateTransaction.publicMint(user.safeAddress, user.safeAddress, "0", process.env.PAINT_ADDR);
+                const mintTxn = await nft.populateTransaction.publicMint(creator.safeAddress, user.safeAddress, "0", process.env.PAINT_ADDR);
                 console.log(mintTxn.data);
                 const request = {
                     "chainId": network.chainId,
@@ -1231,7 +1266,7 @@ module.exports.newPost = async function(postDoc, context) {
                         "nftContract": nftAddress.toLowerCase(),
                         "chain": defaultChainId
                     });
-                    const notificationDoc = await db.collection('users').doc(user.address).collection('notifications').add({
+                    const notificationDoc = await db.collection('users').doc(minterAddress).collection('notifications').add({
                         "image": `https://api.airtist.xyz/images/${post.id}.png`,
                         "link": `https://airtist.xyz/p/${post.id}`,
                         "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
@@ -1267,6 +1302,9 @@ module.exports.newPost = async function(postDoc, context) {
                 );
                 console.log(streamRelayResponse, JSON.stringify(streamRelayResponse));
             } else {
+                if (minterAddress != post.user) {
+                    return; // if not a "first mint", let the /api/mint endpoint handle it
+                }
                 // relay the mint
                 // Generate the target payload
                 const mintTxn = await nft.populateTransaction.selfMint(user.safeAddress);

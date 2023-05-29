@@ -45,6 +45,10 @@ AxelART's approach to interchain NFTs to seperate the NFT logic and the (interch
 
 On each chain AxelART has a single "shared" NFT contract that is the default for all FREE users. Users who pay to upgrade to [PRO](#axelart-pro) get their own dedicated NFT contract. On each chain their is a _single_ `Transporter` contract that handles interchain transportation for _all_ of the NFT contracts. This hub-and-spoke model help simplify things and help minmize total _bytecode_ and thus deployment costs.
 
+![axelart hub and spoke](https://axelart.xyz/assets/images/demo/axelart-hub-and-spoke.png)
+
+All NFTs get sent from Transporter-to-Transporter, with the departure and arrival Transporters calling the NFT contracts on each end, according to the `IERC721Transportable` interface.
+
 #### Introducing the IERC721Transportable Interface
 
 For an NFT contract to be compatible with a Transporter, it must implement the `IERC721Transportable` interface:

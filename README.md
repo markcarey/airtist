@@ -67,7 +67,7 @@ interface IERC721Transportable {
 - upon arrival at the destination chain, the receiving transported will call the `arrive()` function on contract on the destination chain. Implementing the `arrive()` function would be priarliy to mint the token on the destination chain.
 - access control permissions to these is important, and could be implemented in various ways to suit the needs of the deployers
 
-The goal here is for the `Transporter` contract to handle all the interchain GMP messaging aspects while the `ERC721` NFT contracts handle only the burning/minting/transferring actions needed on each end of the transport.
+The goal here is for the `Transporter` contract to handle all the [interchain GMP messaging](https://testnet.axelarscan.io/address/0xa64904acF704926e8032900627a5486Ee191aFe3) aspects while the `ERC721` NFT contracts handle only the burning/minting/transferring actions needed on each end of the transport.
 
 ![axelarscan](https://axelart.xyz/assets/images/demo/axelart-axelarscan.png)
 

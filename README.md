@@ -47,11 +47,13 @@ On each chain AxelART has a single "shared" NFT contract that is the default for
 
 ![axelart hub and spoke](https://axelart.xyz/assets/images/demo/axelart-hub-and-spoke.png)
 
-All NFTs get sent from Transporter-to-Transporter, with the departure and arrival Transporters calling the NFT contracts on each end, according to the `IERC721Transportable` interface.
+All NFTs get sent from Transporter-to-Transporter, with the departure and arrival Transporters calling the NFT contracts on each end, according to the `IERC721Transportable` interface. For the demo, the `Transporter` contracts have been deployed to `0xa64904acF704926e8032900627a5486Ee191aFe3` on [Goerli](https://goerli.etherscan.io/address/0xa64904acf704926e8032900627a5486ee191afe3), [Optimism Goerli](https://goerli-optimism.etherscan.io/address/0xa64904acf704926e8032900627a5486ee191afe3), and [Arbitrum Goerli](https://goerli.arbiscan.io/address/0xa64904acf704926e8032900627a5486ee191afe3).
+
+Calling the `send()` function on the `Transporter` contract starts the process of transporting an NFT from one chain to another. The `IAxelarExecutable` implemented `execute()` function handles to arrival of NFTs from other remote chains. `send()` transactions are sent via Gelato Relay using `ERC2771Context` with Open Zeppelin's `AccessControl` for secure permission. More on the latter [below](#gelato-relay-sponsored-erc2771-calls).
 
 #### Introducing the IERC721Transportable Interface
 
-For an NFT contract to be compatible with a Transporter, it must implement the `IERC721Transportable` interface:
+For an NFT contract to be compatible with a `Transporter`, it must implement the `IERC721Transportable` interface:
 
 ```
 interface IERC721Transportable {
@@ -64,8 +66,21 @@ interface IERC721Transportable {
 - upon arrival at the destination chain, the receiving transported will call the `arrive()` function on contract on the destination chain. Implementing the `arrive()` function would be priarliy to mint the token on the destination chain.
 - access control permissions to these is important, and could be implemented in various ways to suit the needs of the deployers
 
+The goal here is for the `Transporter` contract to handle all the interchain GMP messaging aspects while the `ERC721` NFT contracts handle only the burning/minting/transferring actions needed on each end of the transport.
 
+#### Minting on a Remote Chain
 
+As described above, from a user perspective, they simply choose a chain to receive the NFT. Behind the scenes, AxelART has a "home chain" which acts the default chain. (For the live demo, this is Goerli). When a "remote" (non-home) chain is chosen, the NFT is first minted on the home chain, then transported to the remote chain. Both of these happen behind the scenes -- the user does not have to sign any messages nor approve any messages nor pay any gas. (_Side note:_ in production, it is likely that some "premium" or high-gas chains might only be available to paying [PRO](#axelart-pro) users).
+
+Note that in additon to minting and transporting transactions, the "first mint" of the user also triggers the deployment of a Safe smart contract wallet, relevant `approve()` transactions, and starting a stream of `pAInt` tokens to the user. See below for more information on [pAint tokens](#the-paint-super-token) and [the first mint](#the-first-mint---behind-the-scenes). Since AxelART can be used to create AI art _without_ minting any NFTs, on-chain transactions are only trigger once a user first chooses to mint.
+
+##### Minting on a Remote PRO Contract
+
+Paying PRO users get their own dedicated NFT contracts, which are deployed to the _home chain_ from the `AIrtNFTFactory` contract on the home chain (via Gelato Relay). When another user first chooses a _remote_ chain for a PRO user, this triggers -- completely behind the scenes -- a deployment of the PRO user's contract on the chosen chain -- at the same address as on the home chain, plus giving the remote `Transporter` permissions to transport for the newly deployed contract. Once these have happened behind the scenes, the same mint + transport flow is triggered to send the NFT to the PRO contract on the remote chain. _Again, the complexity is hidden from the user, who just made a single-click to mint on the chosen chain_.
+
+#### Transporting NFTs After the Initial Mint
+
+AxelART `Transporter` contracts support transportation of NFTs between any two deployed chain at any time. For example, if a user decides in future to move their NFT from Optimism to Ethereum Mainnet. This feature has not yet been exposed in the user interface for the live demo.
 
 ## Signup and Login
 
@@ -83,7 +98,7 @@ Note that when choosing the `wallet` login option, AxelART checks for an ENS nam
 
 ## Web 2.0 Features
 
-Several "web 2.0" styles features include:
+Several "web 2.0" style features include:
 - *Creating and sharing AI images.* User enter text prompts to share AI-generated art. (powered by DALL-E from OpenAI)
 - *Liking.* Users can "like" images shared by others
 - *Commenting.* User can post comments in reply to shared images
@@ -92,7 +107,7 @@ Several "web 2.0" styles features include:
 
 ## Web3 Features
 
-Some users may optionally decide to mint images as NFTs on the blockchain. When users post new artwork, they can:
+Some users may optionally decide to mint images as NFTs on the blockchain, as descibed in detail above). When users post new artwork, they can:
 
 1. Choose to immediately mint the image on the blockchain.
 2. Enable others to mint the image for a price.
@@ -122,16 +137,17 @@ When the user decides to mint their first NFT -- and not before -- on-chain tran
 2. ERC20 Approval transactions are sent from the Safe to facilitate the first and future mints.
 3. Sent via Gelato Relay, a transaction is sent to start streaming `3 pAInt` per month to the Safe.
 4. Also via Gelato Relay, the minting transaction is sent to mint the NFT to the shared AxelART NFT contract.
+5. If a remote chain is chosen, a tranport transaction is also sent via Gelato Relay.
 
-Remember, the above 4 transactions happen *behind the scenes*. From the user's perspective _all they did was check a box or tap a link_.
+Remember, the above 4-5 transactions happen *behind the scenes*. From the user's perspective _all they did was check a box or tap a link_.
 
 #### Gelato Relay Sponsored ERC2771 Calls
 
-AxelART uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AxelART's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the three contracts deployed by AxelART support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AxelART but relayed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permissions to restrict functions to authorized signers.
+AxelART uses [Gelato Relay](https://docs.gelato.network/developer-services/relay) to send tokens and NFTs to users' Safes (and one more action discussed below). These requests are signed and submitted on-chain by Gelato relayers, with gas paid from AxelART's [Gelato 1 Balance](https://docs.gelato.network/developer-services/relay/payment-and-fees#1balance) account. Each of the contracts deployed by AxelART support [ERC2771 Context](https://docs.gelato.network/developer-services/relay/quick-start/erc-2771) which enables secure transactions to be signed by AxelART but relayed onchain by Gelato Relayers. This works seamlessly with OpenZeppelin's `AccessControl` permissions to restrict functions to authorized signers.
 
 ### Subsequent NFT Minting
 
-Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to mint the NFT to their Safe, while withdrawing `1 pAInt` from the Safe for each NFT minted of their own art (or the required amount of `pAInt` or `WETH` if minting others’ art). If a user has less than `1 pAInt` they cannot mint and must wait until they accumulate enough via the incoming stream (or by other means 🦄)
+Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to mint the NFT to their Safe, while withdrawing `1 pAInt` from the Safe for each NFT minted of their own art (or the required amount of `pAInt` or `WETH` if minting others’ art). If a user has less than `1 pAInt` they cannot mint and must wait until they accumulate enough via the incoming stream (or by other means 🦄). Again, a second transport transaction is triggered if a remote chain was chosen.
 
 #### Selling NFTs without a Deployed Safe to receive Payment?
 
@@ -141,7 +157,7 @@ Subsequent NFT minting triggers a single transaction -- via Gelato Relay -- to m
 
 Since we are sponsoring -- paying the gas for -- users' transactions, using `pAInt` as a utility token helps limit the gas costs associated with users on the FREE plan. These users receive `3 pAInt` monthly, streamed in real-time.
 
-For serious AxelARTs, minting 3 NFTs per month may not be enough.
+For serious AxelARTists, minting 3 NFTs per month may not be enough.
 
 AxelART uses a _freemium_ business model, where cloud-computing and gas costs are subsidized (sponsored) for FREE users, while revenue from PRO users more than offsets those costs.
 

@@ -69,6 +69,8 @@ interface IERC721Transportable {
 
 The goal here is for the `Transporter` contract to handle all the interchain GMP messaging aspects while the `ERC721` NFT contracts handle only the burning/minting/transferring actions needed on each end of the transport.
 
+![axelarscan](https://axelart.xyz/assets/images/demo/axelart-axelarscan.png)
+
 #### Minting on a Remote Chain
 
 As described above, from a user perspective, they simply choose a chain to receive the NFT. Behind the scenes, AxelART has a "home chain" which acts the default chain. (For the live demo, this is Goerli). When a "remote" (non-home) chain is chosen, the NFT is first minted on the home chain, then transported to the remote chain. Both of these happen behind the scenes -- the user does not have to sign any messages nor approve any messages nor pay any gas. (_Side note:_ in production, it is likely that some "premium" or high-gas chains might only be available to paying [PRO](#axelart-pro) users).

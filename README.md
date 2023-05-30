@@ -250,6 +250,10 @@ Here are some quick links to code in this repo, including some examples of where
 - Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L549), [server-side Stripe webhook handler](server/functions/art/index.js#L936)
 - OpenAI SDK: [generate AI image](server/functions/art/index.js#L475)
 
+## History
+
+AxelART was born as `AIrtist`, a submission to the Safe Account Abstraction hackathon in March 2023. While the vision was always to support interchain NFTs, the initial scope at the time supported only single-chain tokens. Interchain support, powered by Axelar, was added duing the _Axelar x Flipside_ hackathon in May 2023. The name was changed in honor of the sponsor Axelar ... and ... also because nobody knew how to pronounce "AIrtist".
+
 ## Next Steps
 
 - Further development of PRO premium features:

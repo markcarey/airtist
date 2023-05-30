@@ -274,7 +274,7 @@ AxelART was born as `AIrtist`, a submission to the Safe Account Abstraction hack
 ## Links
 
  - Try it now: https://axelart.xyz (minting on Goerli, Optimism-Goerli, and Arbitrum-Goerli testnets)
- - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
+ - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vT8Tjvqcw-KFXQm_q08DzdX_uVJ422wUljR-YGroLclFsyVjX-vg0XnYNLIhA_GhchheVYx4ao9D6uo/pub?start=false&loop=false&delayms=5000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
 
 ## Contact

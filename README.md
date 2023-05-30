@@ -3,7 +3,8 @@
 ## A platform for creating, sharing, and minting AI art
 
 AxelART is like Instagram for AI art: instead of uploading photos, users enter text prompts used by AI to generate the images. Features include both "web 2.0" style social features like commenting, liking, and reposting, as well as (optional) web3 features like minting images as NFTs on multiple chains, powered by [Axelar](https://axelar.network/).
-![example post](https://axelart.xyz/assets/images/demo/airtist-example-small.png)
+
+![example post](https://axelart.xyz/assets/images/demo/axelar-example-small.png)
 
 AxelART uses "account abstraction" to make it seamless for users, without needing wallets nor gas tokens to get started. Even when minting NFTs, users never have to "send transactions", "sign messages", nor write down 12- or 24-word phrases on pieces of paper.
 

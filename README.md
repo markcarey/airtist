@@ -256,19 +256,24 @@ Here are some quick links to code in this repo, including some examples of where
 
 AxelART was born as `AIrtist`, a submission to the Safe Account Abstraction hackathon in March 2023. While the vision was always to support interchain NFTs, the initial scope at the time supported only single-chain tokens. Interchain support, powered by Axelar, was added duing the _Axelar x Flipside_ hackathon in May 2023. The name was changed in honor of the sponsor Axelar ... and ... also because nobody knew how to pronounce "AIrtist".
 
-## Next Steps
+## Future Development Roadmap
+- 2023 Q3 - Team formation. AxelART has been a solo project to date. To take to the next level, skilled and motivated co-founders are needed!
+- 2023 Q3 - Seed funding. To be used for team hires when appropriate, mobile app development, cloud computing, and sponsored gas costs.
+- 2024 Q1 - Production Interchain launch on Etheruem, Optimism, Arbitrum, Avalanche, BNB, Base, and others
 
+
+### Upcoming Features
 - Further development of PRO premium features:
   - Art generation tools
   - Open Edition NFTs
   - NFT auctions
 - Mobile apps for iOS and Android
+- Integration with web3 social (Lens, Farcaster, etc.)
 - Better support for web3-native users (use own wallet instead of Safe, on-chain Subscriptions, etc.)
-- Production launch to multiple chains
 
 ## Links
 
- - Try it now: https://axelart.xyz (minting on Goerli testnet)
+ - Try it now: https://axelart.xyz (minting on Goerli, Optimism-Goerli, and Arbitrum-Goerli testnets)
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
  - Demo Video: https://youtu.be/HlvKtf1z-AM
 

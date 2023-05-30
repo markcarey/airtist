@@ -207,25 +207,28 @@ AxelART uses three core services from Google Firebase for server-side functions.
 - *Firebase Functions* There are three types of serverless functions.
   - The first is an HTTPS function that handles requests to the AxelART API endpoints, used to access and modify Firestore data and interact with Ethereum smart contracts.
   - Next there are several functions that are triggered by adding or updating data in the Firestore database, which in turn may trigger interactions with the Safe and Gelato SDKs to execute functions onchain.
-  - Finally, there are two "cron" functions that run periodically. These poll the Gelato Relay API for the status of transactions that have been relayed to Gelato. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and relevant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
+  - Finally, there are several "cron" functions that run periodically. These poll the Gelato Relay API or Axelar SDK for the status of transactions that have been relayed to Gelato or transported via Axelar GMP. Once Gelato reports that a transaction has been executed, the transaction is fetched using EthersJS and relevant data is extracted from the event logs, such as the `tokenId` of a newly minted NFT, or the `nftContract` address of a newly deployed `AIrtNFT` contract for a PRO user.
 
 ### Ethereum Smart Contracts
 
-Three smart contracts were written in Solidity for AxelART:
+Three smart contracts were written in Solidity:
 
 - `AIrtNFT.sol` - This is an `ERC721` NFT smart contract, leveraging OpenZeppelin contracts. A notable inclusion is the support for `ERC2771Context` which enables secure permission-based function calls via Gelato Relay. Also added are two minting functions which power minting of new images, collecting and transferring `pAInt` or `WETH` tokens when necessary.
-- `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` contract. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AxelART NFT!_.
-- `Streamer.sol` - This contract uses the Superfluid protocol to enable streaming of the `pAInt` utility token, which was also deployed by this contract at deployment time. The core function of the streamer contract enables the starting, updating or stopping of a `pAInt` stream to a recipient, while optionally dropping some `pAInt` immediately (not streamed). 
+- `Transporter.sol` - This Transport contract sends and receives NFTs from multiple `AIrtNFT.sol` contracts between chains, using GMP on the Alexar Network.
+- `AIrtNFTFactory.sol` - This a factory contract used to deploy minimal [Clones](https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clones) of the `AIrtNFT.sol` and `Transporter.sol` contracts. This contract was used to deployed the main NFT contract that is shared by FREE users, and also used to deploy NFT contracts for each PRO user when they upgrade. *Fun fact:* _Using the minimal clone approach, it actually costs *less gas* to deploy an NFT contract for a PRO user, compared to minting an AxelART NFT!_. The factory contract is also used to deploy a single instance of `Transporter.sol` on each chain.
+- `Streamer.sol` - This contract uses the Superfluid protocol to enable streaming of the `pAInt` utility token, which was also deployed by this contract at deployment time. The core function of the streamer contract enables the starting, updating or stopping of a `pAInt` stream to a recipient, while optionally dropping some `pAInt` immediately (not streamed). This contract is only deployed to the home chain.
 
-#### Deployed Contracts (Goerli Testnet)
+#### Deployed Contracts
 
-- (Shared) `AIrtNFT` contract: `0x85ea20193d88A4e4BCb45224CE462029608158c3` [#](https://goerli.etherscan.io/address/0x85ea20193d88A4e4BCb45224CE462029608158c3)
-- `AIrtNFTFactory` contract: `0x9d1248BA4EF720da649aE5bFa9cA46311C028af4` [#](https://goerli.etherscan.io/address/0x9d1248BA4EF720da649aE5bFa9cA46311C028af4)
-- `Streamer` contract: `0x83D4A49b80Af1CE060361A457a02d057560A9aD9` [#](https://goerli.etherscan.io/address/0x83D4A49b80Af1CE060361A457a02d057560A9aD9)
-- `pAInt` Super Token: `0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A` [#](https://goerli.etherscan.io/address/0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A)
-- Example PRO `AirNFT` contract deployed using the factory contract via Gelato Relay: `0xbeccc3e7bfcc3a2071ff4c11ef5eab7d134906f2` [#](https://goerli.etherscan.io/address/0xbeccc3e7bfcc3a2071ff4c11ef5eab7d134906f2)
+Note all equivalent contracts are _deployed to the same address on each chain_. The implementation contracts for `AIrtNFT.sol` and `Transporter.sol` as well as the `AIrtNFTFactory.sol` contracts were actually deployed on all chain via the [Multichain Deployer](https://github.com/markcarey/multichain-deployer) contract on the home chain (Goerli for the live demo). _Multichain Deployer is a separate project -- powered by Axelar -- that enables remote deployment of contracts to multiple chains at the same address on each_.
 
-*Note:* the "Transactions" tab on Etherscan shows empty (or almost) for the above contracts. This is because almost all transactions are executed via Gelato Relay. As such, you can view the "Internal Transactions" tab to view the activity on these contracts.
+- (Shared) `AIrtNFT` contract: `0x6a531B4447fB07b10A39E99Fc25b9c2cA63eAA42`: [Goerli](https://goerli.etherscan.io/address/0x6a531B4447fB07b10A39E99Fc25b9c2cA63eAA42) - [Optimism](https://goerli-optimism.etherscan.io/address/0x6a531b4447fb07b10a39e99fc25b9c2ca63eaa42) - [Arbitrum](https://goerli.arbiscan.io/address/0x6a531b4447fb07b10a39e99fc25b9c2ca63eaa42)
+- `AIrtNFTFactory` contract: `0xB67E29f515106311703c793B98C7459e3198e053`: [Goerli](https://goerli.etherscan.io/address/0xB67E29f515106311703c793B98C7459e3198e053) - [Optimism](https://goerli-optimism.etherscan.io/address/0xB67E29f515106311703c793B98C7459e3198e053) - [Arbitrum](https://goerli.arbiscan.io/address/0xB67E29f515106311703c793B98C7459e3198e053)
+- `Streamer` contract: `0x83D4A49b80Af1CE060361A457a02d057560A9aD9`: [Goerli](https://goerli.etherscan.io/address/0x83D4A49b80Af1CE060361A457a02d057560A9aD9)
+- `pAInt` Super Token: `0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A` [Goerli](https://goerli.etherscan.io/address/0xB66cf6eAf3A2f7c348e91bf1504d37a834aBEB8A)
+- Example PRO `AirNFT` contract deployed using the factory contract via Gelato Relay: `https://goerli.etherscan.io/address/0x5c73f6b7f56137f2c963a3534a0529e63a0b311f`: [Goerli](https://goerli.etherscan.io/address/https://goerli.etherscan.io/address/0x5c73f6b7f56137f2c963a3534a0529e63a0b311f) - [Optimism](https://goerli-optimism.etherscan.io/address/0x5C73f6B7F56137F2c963A3534A0529e63A0b311F) - [Arbitrum](https://goerli.arbiscan.io/address/0x5C73f6B7F56137F2c963A3534A0529e63A0b311F)
+
+*Note:* the "Transactions" tab on Etherscan may show as empty for some of the above contracts. This is because almost all transactions are executed via Gelato Relay. As such, you can view the "Internal Transactions" tab to view the activity on these contracts.
 
 ### Quick Links for Code
 
@@ -233,15 +236,17 @@ Here are some quick links to code in this repo, including some examples of where
 
 - [Contracts](contracts/)
 - [Frontend](server/hosting/)
-- [AxelART API](server/functions/art/index.js#L396)
-- [Server cron functions](server/functions/art/index.js#L1178)
-- [Server DB Triggers](server/functions/art/index.js#L920)
-- web3auth SDK: [client](server/hosting/js/dapp.js#L55), [server-side JWT verification](server/functions/art/index.js#L318)
-- Safe SDK: [deploy/predict Safe address](server/functions/art/index.js#L92), [send Safe transaction](server/functions/art/index.js#L128)
-- Gelato Relay SDK: [update Superfluid stream](server/functions/art/index.js#L230), [mint NFT](server/functions/art/index.js#L989), [deploy contract via Factory](server/functions/art/index.js#L175), [poll API for task status](server/functions/art/index.js#L1189)
-- Superfluid: [streaming contract](contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](server/functions/art/index.js#L230)
-- Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L542), [server-side Stripe webhook handler](server/functions/art/index.js#L703)
-- OpenAI SDK: [generate AI image](server/functions/art/index.js#L273)
+- [AxelART API](server/functions/art/index.js#L601)
+- [Server cron functions](server/functions/art/index.js#L1467)
+- [Server DB Triggers](server/functions/art/index.js#L1153)
+- Axelar GMP (Solidity): [sending](contracts/Transporter.sol#L37), [receiving/executing](contracts/Transporter.sol#L51)
+- Axelar SDK: [estimate gas](server/functions/art/index.js#L429), [check status](server/functions/art/index.js#L1568)
+- web3auth SDK: [client](server/hosting/js/dapp.js#L59), [server-side JWT verification](server/functions/art/index.js#L520)
+- Safe SDK: [deploy/predict Safe address](server/functions/art/index.js#L118), [send Safe transaction](server/functions/art/index.js#L193)
+- Gelato Relay SDK: [update Superfluid stream](server/functions/art/index.js#L327), [mint NFT](server/functions/art/index.js#L857), [deploy contract via Factory](server/functions/art/index.js#L242), [poll API for task status](server/functions/art/index.js#L1478)
+- Superfluid: [streaming contract](contracts/Streamer.sol), [update Superfluid stream via Gelato Relay](server/functions/art/index.js#L327)
+- Stripe: [frontend redirect user to Stripe payment link](server/hosting/js/dapp.js#L549), [server-side Stripe webhook handler](server/functions/art/index.js#L936)
+- OpenAI SDK: [generate AI image](server/functions/art/index.js#L475)
 
 ## Next Steps
 
@@ -251,7 +256,7 @@ Here are some quick links to code in this repo, including some examples of where
   - NFT auctions
 - Mobile apps for iOS and Android
 - Better support for web3-native users (use own wallet instead of Safe, on-chain Subscriptions, etc.)
-- Production launch to Layer2(s) and ETH mainnet (with higher prices)
+- Production launch to multiple chains
 
 ## Links
 

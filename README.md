@@ -11,8 +11,8 @@ AxelART uses "account abstraction" to make it seamless for users, without needin
 ## Quick Links
 
  - Try it now: https://axelart.xyz (minting on Goerli testnet)
- - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vQHk0hUKl1FHKscabCKa432GbYgqxaspEWeJ9n59cy_OqILc22yfVD6RY0WPrSPljkC4KtRxdwnlK_x/pub?start=false&loop=false&delayms=3000)
- - Demo Video: https://youtu.be/HlvKtf1z-AM
+ - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vT8Tjvqcw-KFXQm_q08DzdX_uVJ422wUljR-YGroLclFsyVjX-vg0XnYNLIhA_GhchheVYx4ao9D6uo/pub?start=false&loop=false&delayms=5000)
+ - Demo Video: https://youtu.be/sjy7F5azLRQ
 
 _For more details on AxelART web2 and web3 features,_ [see below](#signup-and-login)
 

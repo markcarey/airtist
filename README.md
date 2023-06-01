@@ -10,7 +10,7 @@ AxelART uses "account abstraction" to make it seamless for users, without needin
 
 ## Quick Links
 
- - Try it now: https://axelart.xyz (minting on Goerli testnet)
+ - Try it now: https://axelart.xyz (minting on Goerli, Optimism-Goerli, Arbitrum-Goerli)
  - [Slide Presentation](https://docs.google.com/presentation/d/e/2PACX-1vT8Tjvqcw-KFXQm_q08DzdX_uVJ422wUljR-YGroLclFsyVjX-vg0XnYNLIhA_GhchheVYx4ao9D6uo/pub?start=false&loop=false&delayms=5000)
  - Demo Video: https://youtu.be/sjy7F5azLRQ
 
